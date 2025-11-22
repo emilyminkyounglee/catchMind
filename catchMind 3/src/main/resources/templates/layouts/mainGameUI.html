@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- 그림판 영역 Fragment -->
+<section class="col-lg-8" aria-label="그림판 영역" th:fragment="drawing-area">
+    <article class="border bg-white h-100 p-2">
+        <!-- 실제 그림판: canvas -->
+        <div class="ratio ratio-4x3">
+            <canvas id="drawing-canvas">
+                사용 중인 브라우저에서는 캔버스를 지원하지 않습니다.
+            </canvas>
+        </div>
+    </article>
+</section>
+
+<!-- 게임 정보 카드 Fragment -->
+<section class="border bg-white p-3 mb-3" th:fragment="game-info-card">
+    <h2 class="h6 mb-3">게임 정보</h2>
+
+    <div class="mb-2">
+        <span class="fw-semibold me-2">Round</span>
+        <!-- 나중에 [[${round}]] / [[${totalRound}]] 로 치환 가능 -->
+        <span id="round-info">3 / 6</span>
+    </div>
+
+    <div class="mb-2">
+        <span class="fw-semibold me-2">Timer</span>
+        <span id="timer-display">01:12</span>
+    </div>
+
+    <div class="mb-2">
+        <span class="fw-semibold me-2">Attempts</span>
+        <span id="attempt-icons">
+            <img src="/image/clover_icon.png" alt="Attempt 1" style="height:18px; margin:0 2px;">
+            <img src="/image/clover_icon.png" alt="Attempt 2" style="height:18px; margin:0 2px;">
+            <img src="/image/clover_icon.png" alt="Attempt 3" style="height:18px; margin:0 2px;">
+            <img src="/image/clover_icon.png" alt="Attempt 4" style="height:18px; margin:0 2px;">
+            <img src="/image/clover_icon.png" alt="Attempt 5" style="height:18px; margin:0 2px;">
+        </span>
+    </div>
+
+    <div class="mb-0">
+        <span class="fw-semibold me-2">Score</span>
+        <span id="score">1850</span> pts
+    </div>
+</section>
+
+</body>
+</html>
