@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
     <title>CatchMind 1:1 - 중간 결과</title>
@@ -12,17 +12,8 @@
 </head>
 <body class="bg-light">
 
-<!-- ===== 상단 바 (로고 + 제목) ===== -->
-<header class="border-bottom bg-white">
-    <div class="container-fluid py-2">
-        <div class="d-flex align-items-center">
-            <a href="/" class="d-flex align-items-center text-decoration-none">
-                <!-- 마스코트 아이콘 -->
-                <span class="ms-2 fw-bold fs-4">CatchMind 1:1</span>
-            </a>
-        </div>
-    </div>
-</header>
+<!-- 공통 상단 바 -->
+<header th:replace="layouts/index :: global-header"></header>
 
 <!-- ===== 중간 결과 메인 영역 ===== -->
 <main class="container py-5">
@@ -55,7 +46,6 @@
 
                 <!-- 다음 라운드 진행 버튼 -->
                 <div class="d-flex justify-content-center gap-2 mt-2">
-                    <!-- 실제로는 JS나 링크로 다음 라운드 / 게임 화면으로 이동 -->
                     <a href="/play" class="btn btn-primary">
                         다음 라운드로 계속하기
                     </a>

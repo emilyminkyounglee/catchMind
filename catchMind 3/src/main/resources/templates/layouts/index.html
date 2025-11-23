@@ -1,12 +1,16 @@
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <title>CatchMind 1:1 - Layout</title>
+</head>
 <body>
 
 <!-- 공통 상단 바 Fragment -->
 <header class="border-bottom bg-white" th:fragment="global-header">
     <div class="container-fluid py-2">
         <div class="d-flex align-items-center">
-            <a href="#" class="d-flex align-items-center text-decoration-none">
+            <a href="/" class="d-flex align-items-center text-decoration-none">
                 <!-- 마스코트 아이콘 -->
                 <img src="/image/mascot-dog.png" alt="CatchMind 강아지 마스코트"
                      style="height:40px; width:auto;" />

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
     <title>CatchMind 결과</title>
@@ -10,15 +10,8 @@
 </head>
 <body class="bg-light">
 
-<header class="border-bottom bg-white">
-    <div class="container-fluid py-2">
-        <div class="d-flex align-items-center">
-            <a href="/" class="d-flex align-items-center text-decoration-none">
-                <span class="ms-2 fw-bold fs-4">CatchMind 결과</span>
-            </a>
-        </div>
-    </div>
-</header>
+<!-- 공통 상단 바 -->
+<header th:replace="layouts/index :: global-header"></header>
 
 <main class="container py-4">
     <div class="row justify-content-center">

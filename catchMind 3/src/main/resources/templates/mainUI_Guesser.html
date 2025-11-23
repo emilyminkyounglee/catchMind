@@ -12,23 +12,22 @@
 </head>
 <body class="bg-light">
 
-<!-- 공통 상단 바 (layouts/index.html에서 fragment 끌어옴) -->
+<!-- 공통 상단 바 -->
 <header th:replace="layouts/index :: global-header"></header>
 
 <!-- ===== 메인 콘텐츠 ===== -->
 <main class="container-fluid py-3">
     <div class="row g-3">
 
-        <!-- 그림판 영역: layouts/mainUI.html의 drawing-area fragment 사용 -->
+        <!-- 그림판 영역 (공통 fragment) -->
         <section class="col-lg-8" aria-label="그림판 영역"
                  th:replace="layouts/mainGameUI :: drawing-area">
-            <!-- fragment로 대체되므로 내용 비워둬도 됨 -->
         </section>
 
         <!-- 오른쪽 패널 -->
         <aside class="col-lg-4" aria-label="게임 정보 및 정답 입력 패널">
 
-            <!-- 게임 정보 카드: layouts/mainUI.html의 game-info-card fragment 사용 -->
+            <!-- 게임 정보 카드 (공통 fragment) -->
             <section class="border bg-white p-3 mb-3"
                      th:replace="layouts/mainGameUI :: game-info-card">
             </section>
