@@ -35,13 +35,21 @@
             <!-- Guesser 전용: 정답 입력 섹션 -->
             <section class="border bg-white p-3">
                 <h2 class="h6">정답 입력</h2>
-                <form id="answer-form" class="d-flex gap-2 mt-2">
+
+                <!-- 정답 제출 폼: /game/answer 로 POST -->
+                <form id="answer-form"
+                      class="d-flex gap-2 mt-2"
+                      action="/game/answer"
+                      method="post">
                     <label for="answer-input" class="visually-hidden">정답 입력</label>
+
+                    <!-- GameController @RequestParam String answer 로 들어감 -->
                     <input type="text"
                            id="answer-input"
                            name="answer"
                            class="form-control"
                            placeholder="추리한 정답을 입력하세요" />
+
                     <button type="submit" class="btn btn-primary">
                         정답 확인
                     </button>

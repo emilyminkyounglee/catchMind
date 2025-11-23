@@ -35,8 +35,7 @@
             <!-- Drawer 전용: 제시어 표시 섹션 -->
             <section class="border bg-white p-3">
                 <h2 class="h6 mb-2">이번 라운드 제시어</h2>
-                <!-- 나중에 [[${word}]] 같은 식으로 서버에서 내려줘도 됨 -->
-                <p class="fs-4 fw-bold mb-2" id="round-word">강아지</p>
+                <p class="fs-4 fw-bold mb-2" th:text="${wordForDrawer}">제시어</p>
             </section>
 
         </aside>

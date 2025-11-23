@@ -22,34 +22,18 @@
     <!-- 홈 제목 -->
     <h1 class="fw-bold mb-4">CatchMind 1:1</h1>
 
-    <!-- 아이디 입력 폼 -->
-    <div class="mb-3 w-50">
-        <label class="form-label fw-semibold">아이디 입력</label>
-        <input type="text" class="form-control" id="userIdInput" placeholder="아이디를 입력하세요" />
-    </div>
+    <form action="/game/start" method="post" class="w-50">
+        <!-- 아이디 입력 폼 -->
+        <div class="mb-3 w-50">
+            <label class="form-label fw-semibold">아이디 입력</label>
+            <input type="text" class="form-control" name="userId" placeholder="아이디를 입력하세요" required/>
+        </div>
 
-    <!-- Start 버튼 -->
-    <button class="btn btn-primary w-50 fw-semibold"
-            onclick="enterGame()">
-        Start
-    </button>
+        <button class="btn btn-primary w-100 fw-semibold" type="submit">Start</button>
+    </form>
 
 </main>
 
-<!-- ===== Start 버튼 눌렀을 때 동작 (JS) ===== -->
-<script>
-    function enterGame() {
-        const userId = document.getElementById("userIdInput").value;
-
-        if (!userId) {
-            alert("아이디를 입력하세요!");
-            return;
-        }
-
-        // TODO: 역할에 따라 Drawer/Guesser 라우팅
-        alert(userId + " 님, 환영합니다! (게임 화면으로 이동 예정)");
-    }
-</script>
 
 <!-- 부트스트랩 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

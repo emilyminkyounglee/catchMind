@@ -8,5 +8,6 @@ public class CatchMindApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(CatchMindApplication.class, args);
+        System.out.println("success...");
     }
 }
