@@ -2,10 +2,15 @@ package kr.ac.ewha.catchMind.service;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import kr.ac.ewha.catchMind.model.WordDictionary;
+import kr.ac.ewha.catchMind.repository.PlayerRepository;
+import kr.ac.ewha.catchMind.repository.WordDictionaryRepository;
 import org.springframework.stereotype.Service;
 
 import kr.ac.ewha.catchMind.model.Player;
 import kr.ac.ewha.catchMind.model.Role;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GameService {
@@ -17,6 +22,13 @@ public class GameService {
     private int score = 0;
     private int roundScore = 0;
     private static final long ROUND_LIMIT_MS = 90_000;
+    private final PlayerRepository playerRepository;
+    private final WordDictionaryRepository wordDictionaryRepository;
+    public GameService(PlayerRepository playerRepository, WordDictionaryRepository wordDictionaryRepository) {
+        this.playerRepository = playerRepository;
+        this.wordDictionaryRepository = wordDictionaryRepository;
+    }
+
     public boolean isGameOver() // 현재 게임이 종료되었는지 확인 aka 6라운드까지 진행 완료 했는지
     {
         boolean isOver = false;
@@ -85,7 +97,7 @@ public class GameService {
     {
         return rounds;
     }
-    public void setupNewGame(List<String> wordList, Player p1, Player p2)//게임을 총체적으로 다시 실행해볼때
+    public void setupNewGame(Player p1, Player p2)//게임을 총체적으로 다시 실행해볼때
     {
         tries = 5;
         rounds = 1;
@@ -98,7 +110,7 @@ public class GameService {
     }
     public void setPlayerInfo(Player player, int i, String name)
     {
-        //view에서 받은 플레이어 정보 (이름)
+
         player.setName(name);
         if  (i%2 == 0)
         {
@@ -128,8 +140,13 @@ public class GameService {
     {
         return this.roundScore;
     }
-    public String getWordForDrawer() { // 정답 알려주는 애
-        return this.answer;
+    public String getWordForDrawer() {
+        WordDictionary wordDictionary = wordDictionaryRepository.getRandom();
+        if ( wordDictionary == null)
+        {
+            return "고양이";
+        }
+        return wordDictionary.getWord();
     }
     public String getDrawerName(Player p1, Player p2)
     {
@@ -145,5 +162,24 @@ public class GameService {
             return p1.getName();
         }
         return p2.getName();
+    }
+
+    @Transactional
+    public void saveGameData(Player p) {
+        p.setTotalScore(p.getTotalScore() + this.score);
+        p.setGamesPlayed(p.getGamesPlayed() + 1);
+        playerRepository.save(p);
+    }
+
+    @Transactional
+    public Player loadPlayer(String name) {
+        Player p = playerRepository.findByName(name);
+        if (p == null) {
+            p = new Player();
+            p.setName(name);
+            p.setTotalScore(0);
+            playerRepository.save(p);
+        }
+        return p;
     }
 }
