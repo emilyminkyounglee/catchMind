@@ -2,7 +2,7 @@ package kr.ac.ewha.catchMind.model;
 
 
 import jakarta.persistence.*;
-import org.springframework.data.annotation.Id;
+
 
 @Entity
 @Table(name = "words")
@@ -16,7 +16,8 @@ public class WordDictionary {
 
     private String category;
 
-    private boolean use = true;
+    @Column(nullable = false, name = "use_flag")
+    private boolean useFlag = true;
 
     public Long getId() {
         return id;
@@ -35,10 +36,10 @@ public class WordDictionary {
     }
 
     public boolean isUse() {
-        return use;
+        return useFlag;
     }
     public void setUse(boolean use) {
-        this.use = use;
+        this.useFlag = use;
     }
 
 }

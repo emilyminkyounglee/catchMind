@@ -9,11 +9,11 @@ import java.util.List;
 
 public interface WordDictionaryRepository extends JpaRepository<WordDictionary, Long> {
 
-    @Query(value = "SELECT * FROM words WHERE use = true ORDER BY RAND() LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM words WHERE use_flag = true ORDER BY RAND() LIMIT 1", nativeQuery = true)
     WordDictionary getRandom();
 
     boolean existsByWord(String word);
 
     @Query("SELECT DISTINCT w.category FROM WordDictionary w WHERE w.category IS NOT NULL")
-    List<WordDictionary> findDistinctCategory();
+    List<String> findDistinctCategory();
 }

@@ -23,7 +23,7 @@ public class AdminWordController {
     @GetMapping
     public String showWords(Model model){
         List<WordDictionary> words = wordDictionaryRepository.findAll();
-        List<WordDictionary> categories = wordDictionaryRepository.findDistinctCategory();
+        List<String> categories = wordDictionaryRepository.findDistinctCategory();
         model.addAttribute("words", words);
         model.addAttribute("categories", categories);
         model.addAttribute("newWord", new WordDictionary());
