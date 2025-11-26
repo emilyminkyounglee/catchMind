@@ -149,20 +149,20 @@ public class GameService {
         return wordDictionary.getWord();
     }
     public String getDrawerName(Player p1, Player p2) {
-        if (p1 != null && p1.getRole() == Role.DRAWER) {
+        if (p1 != null && p1.getRole().equals(Role.DRAWER)) {
             return p1.getName();
         }
-        if (p2 != null && p2.getRole() == Role.DRAWER) {
+        if (p2 != null && p2.getRole().equals(Role.DRAWER)) {
             return p2.getName();
         }
         return "Drawer"; // 기본값
     }
 
     public String getGuesserName(Player p1, Player p2) {
-        if (p1 != null && p1.getRole() == Role.GUESSER) {
+        if (p1 != null && p1.getRole().equals(Role.GUESSER)) {
             return p1.getName();
         }
-        if (p2 != null && p2.getRole() == Role.GUESSER) {
+        if (p2 != null && p2.getRole().equals(Role.GUESSER)) {
             return p2.getName();
         }
         return "Guesser"; // 기본값
