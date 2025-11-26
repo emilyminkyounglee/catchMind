@@ -186,4 +186,15 @@ public class GameService {
         }
         return p;
     }
+    public String giveHint(){
+        String hint = "";
+        if (getTriesLeft()<3)
+        {
+            return hint;
+        }
+        else
+        {
+            return hint;
+        }
+    }
 }
