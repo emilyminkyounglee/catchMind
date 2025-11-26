@@ -16,10 +16,9 @@ import java.util.List;
 public class GameController {
     private final GameService gameService;
 
-    private final Player p1 = new Player();
-    private final Player p2 = new Player();
+    private Player p1;
+    private Player p2;
 
-    private final List<String> wordList = Arrays.asList("사과", "바나나", "딸기", "배", "고양이", "강아지");
     public GameController(GameService gameService) {
         this.gameService = gameService;
     }
@@ -36,28 +35,27 @@ public class GameController {
     @PostMapping("/start")
     public String startGame(@RequestParam String userId, Model model) {
 
-        // 간단히 p1 = DRAWER, p2 = GUESSER로 고정 (임시)
-        p1.setName(userId);
-        p1.setRole(Role.DRAWER);
+        if ("wkvmtlf2MEJ".equals(userId)) {
+            return  "redirect:/admin/words";
+        }
+        p1 = gameService.loadPlayer(userId);
+        p2 = gameService.loadPlayer(userId);
 
-        p2.setName("상대방");
+        p1.setRole(Role.DRAWER);
         p2.setRole(Role.GUESSER);
 
-        // 게임 전체 초기화
-        gameService.setupNewGame(wordList, p1, p2);
+        gameService.setupNewGame(p1, p2);
 
-        // 새 라운드 시작
         gameService.newRound();
 
-        // 이번 라운드 제시어 뽑기 & 정답 세팅
-        String answerWord = pickRandomWord();
+        String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
         // drawer 화면에 넘길 정보들
         addCommonAttributes(model);
         model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
 
-        return "mainUI_Drawer";   // templates/mainUI_Drawer.html
+        return "mainUI_Drawer";
     }
     @GetMapping("/guesser")
     public String showGuesser(Model model) {
@@ -75,7 +73,6 @@ public class GameController {
 
         boolean correct = gameService.checkAnswer(answer);
 
-        // 라운드가 끝났는지 확인 → 점수 계산도 여기서 이미 됨
         boolean roundOver = gameService.isRoundOver(correct);
 
         if (!roundOver) {
@@ -86,7 +83,7 @@ public class GameController {
             return "mainUI_Guesser";
         }
 
-        // 라운드가 끝났다면 → midResult 화면
+
         boolean roundSuccess = gameService.getCurrentRoundScore() > 0;
 
         model.addAttribute("round", gameService.getCurrentRound() - 1); // 방금 끝난 라운드
@@ -106,18 +103,17 @@ public class GameController {
     public String nextRound(Model model) {
 
         if (gameService.isGameOver()) {
-            // 6라운드 다 끝났으면 최종 결과로
+            gameService.saveGameData(p1);
+            gameService.saveGameData(p2);
             model.addAttribute("totalScore", gameService.getScore());
             return "finalResult";
         }
 
-        // 역할 바꾸기
         gameService.changeRoles(p1, p2);
 
-        // 새 라운드 시작
         gameService.newRound();
 
-        String answerWord = pickRandomWord();
+        String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
         addCommonAttributes(model);
@@ -126,9 +122,5 @@ public class GameController {
         return "mainUI_Drawer";
     }
 
-    private String pickRandomWord() {
-        int idx = (int) (Math.random() * wordList.size());
-        return wordList.get(idx);
-    }
 
 }
