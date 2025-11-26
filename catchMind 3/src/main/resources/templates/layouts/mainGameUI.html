@@ -18,33 +18,50 @@
 <section class="border bg-white p-3 mb-3" th:fragment="game-info-card">
     <h2 class="h6 mb-3">게임 정보</h2>
 
+    <!-- 라운드 정보: round / 6 -->
     <div class="mb-2">
         <span class="fw-semibold me-2">Round</span>
-        <!-- 나중에 [[${round}]] / [[${totalRound}]] 로 치환 가능 -->
-        <span id="round-info">3 / 6</span>
+        <span id="round-info"
+              th:text="${round} + ' / 6'">1 / 6</span>
     </div>
 
+    <!-- 플레이어 이름 -->
+    <div class="mb-2">
+        <span class="fw-semibold me-2">Drawer</span>
+        <span th:text="${drawerName}">플레이어 1</span>
+    </div>
+
+    <div class="mb-2">
+        <span class="fw-semibold me-2">Guesser</span>
+        <span th:text="${guesserName}">플레이어 2</span>
+    </div>
+
+    <!-- 타이머 (지금은 JS로 채울 예정, 서버 값은 나중에 연결해도 됨) -->
     <div class="mb-2">
         <span class="fw-semibold me-2">Timer</span>
         <span id="timer-display">01:12</span>
     </div>
 
+    <!-- 남은 시도 횟수 -->
     <div class="mb-2">
         <span class="fw-semibold me-2">Attempts</span>
         <span id="attempt-icons">
-            <img src="/image/clover_icon.png" alt="Attempt 1" style="height:18px; margin:0 2px;">
-            <img src="/image/clover_icon.png" alt="Attempt 2" style="height:18px; margin:0 2px;">
-            <img src="/image/clover_icon.png" alt="Attempt 3" style="height:18px; margin:0 2px;">
-            <img src="/image/clover_icon.png" alt="Attempt 4" style="height:18px; margin:0 2px;">
-            <img src="/image/clover_icon.png" alt="Attempt 5" style="height:18px; margin:0 2px;">
+            <!-- triesLeft 개수만큼 클로버 출력 -->
+            <span th:each="i : ${#numbers.sequence(1, triesLeft)}">
+                <img src="/image/clover_icon.png"
+                     alt="Attempt"
+                    style="height:18px; margin:0 2px;">
+            </span>
         </span>
     </div>
 
+    <!-- 점수: 나중에 totalScore를 넘겨주면 표시되도록 기본값 0 -->
     <div class="mb-0">
         <span class="fw-semibold me-2">Score</span>
-        <span id="score">1850</span> pts
+        <span id="score" th:text="${totalScore} ?: 0">0</span> pts
     </div>
 </section>
 
 </body>
 </html>
+

@@ -22,6 +22,16 @@ public class GameController {
     public GameController(GameService gameService) {
         this.gameService = gameService;
     }
+
+    //공통으로 Model에 등록시킬 값들을 메서드로 처리
+    private void addCommonAttributes(Model model) {
+        model.addAttribute("round", gameService.getCurrentRound());
+        model.addAttribute("drawerName", gameService.getDrawerName(p1, p2));
+        model.addAttribute("guesserName", gameService.getGuesserName(p1, p2));
+        model.addAttribute("triesLeft", gameService.getTriesLeft());
+        model.addAttribute("totalScore", gameService.getScore());
+    }
+
     @PostMapping("/start")
     public String startGame(@RequestParam String userId, Model model) {
 
@@ -41,22 +51,22 @@ public class GameController {
         String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
-        model.addAttribute("round", gameService.getCurrentRound());
-        model.addAttribute("drawerName", gameService.getDrawerName(p1, p2));
-        model.addAttribute("guesserName", gameService.getGuesserName(p1, p2));
+        // drawer 화면에 넘길 정보들
+        addCommonAttributes(model);
         model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
 
         return "mainUI_Drawer";
     }
     @GetMapping("/guesser")
     public String showGuesser(Model model) {
+        // 게임 시작 전에 접근하면 홈으로 보내기
+        if (p1.getName() == null || p1.getRole() == null ||
+                p2.getName() == null || p2.getRole() == null) {
+            return "redirect:/";
+        }
 
-        model.addAttribute("round", gameService.getCurrentRound());
-        model.addAttribute("drawerName", gameService.getDrawerName(p1, p2));
-        model.addAttribute("guesserName", gameService.getGuesserName(p1, p2));
-        model.addAttribute("triesLeft", gameService.getTriesLeft());
-
-        return "mainUI_Guesser";
+        addCommonAttributes(model);
+        return "mainUI_Guesser";  // templates/mainUI_Guesser.html
     }
     @PostMapping("/answer")
     public String submitAnswer(@RequestParam String answer, Model model) {
@@ -66,10 +76,8 @@ public class GameController {
         boolean roundOver = gameService.isRoundOver(correct);
 
         if (!roundOver) {
-            model.addAttribute("round", gameService.getCurrentRound());
-            model.addAttribute("drawerName", gameService.getDrawerName(p1, p2));
-            model.addAttribute("guesserName", gameService.getGuesserName(p1, p2));
-            model.addAttribute("triesLeft", gameService.getTriesLeft());
+            // 라운드 안 끝났으면 다시 Guesser 화면으로
+            addCommonAttributes(model);
             model.addAttribute("lastResult", correct);
 
             return "mainUI_Guesser";
@@ -108,9 +116,7 @@ public class GameController {
         String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
-        model.addAttribute("round", gameService.getCurrentRound());
-        model.addAttribute("drawerName", gameService.getDrawerName(p1, p2));
-        model.addAttribute("guesserName", gameService.getGuesserName(p1, p2));
+        addCommonAttributes(model);
         model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
 
         return "mainUI_Drawer";
