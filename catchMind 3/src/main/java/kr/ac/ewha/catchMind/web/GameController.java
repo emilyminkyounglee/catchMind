@@ -41,8 +41,9 @@ public class GameController {
         p1 = gameService.loadPlayer(userId);
         p2 = gameService.loadPlayer(userId);
 
-        p1.setRole(Role.DRAWER);
-        p2.setRole(Role.GUESSER);
+        gameService.setRoleRandomly(p1, p2);
+//        p1.setRole(Role.DRAWER);
+//        p2.setRole(Role.GUESSER);
 
         gameService.setupNewGame(p1, p2);
 
@@ -51,11 +52,22 @@ public class GameController {
         String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
-        // drawer 화면에 넘길 정보들
-        addCommonAttributes(model);
-        model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
+        // 새로 수정한 부분!
+        if (p1.getRole() == Role.DRAWER) {
+            addCommonAttributes(model);
+            model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
+            return "mainUI_Drawer";
 
-        return "mainUI_Drawer";
+        } else {
+            return "redirect:/game/guesser";
+        }
+        // 여기까지
+
+//        // drawer 화면에 넘길 정보들
+//        addCommonAttributes(model);
+//        model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
+//
+//        return "mainUI_Drawer";
     }
     @GetMapping("/guesser")
     public String showGuesser(Model model) {
@@ -116,10 +128,15 @@ public class GameController {
         String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
-        addCommonAttributes(model);
-        model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
 
-        return "mainUI_Drawer";
+        if (p1.getRole() == Role.DRAWER) {
+            addCommonAttributes(model);
+            model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
+            return "mainUI_Drawer";
+        } else {
+            return "redirect:/game/guesser";
+        }
+
     }
 
     @PostMapping("/mypage")

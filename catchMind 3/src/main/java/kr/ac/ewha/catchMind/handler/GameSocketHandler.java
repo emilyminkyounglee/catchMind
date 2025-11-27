@@ -87,7 +87,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
         gameService.isRoundOver(false);
 
-        // 2. 종료 메시지 전송 (ROUND_END)
+        // 종료 메시지 전송 (ROUND_END)
         GameMessage endMsg = new GameMessage();
         endMsg.setType("ROUND_END");
         endMsg.setRoundSuccess(false);
