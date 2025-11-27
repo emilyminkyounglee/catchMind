@@ -1,5 +1,6 @@
 package kr.ac.ewha.catchMind.web;
 
+import jakarta.servlet.http.HttpSession;
 
 import kr.ac.ewha.catchMind.model.Player;
 import kr.ac.ewha.catchMind.model.Role;
@@ -107,6 +108,27 @@ public class GameController {
 
         return "midResult";    // templates/midResult.html
     }
+
+    //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET
+    @GetMapping("/answer")
+    public String showMidResult(Model model) {
+
+        boolean roundSuccess = gameService.getCurrentRoundScore() > 0;
+
+        model.addAttribute("round", gameService.getCurrentRound() - 1); // 방금 끝난 라운드
+        model.addAttribute("roundSuccess", roundSuccess);
+        model.addAttribute("roundScore", gameService.getCurrentRoundScore());
+        model.addAttribute("totalScore", gameService.getScore());
+        model.addAttribute("answerWord", gameService.getAnswer());
+
+        if (gameService.isGameOver()) {
+            return "finalResult";
+        }
+
+        return "midResult";
+    }
+
+
     @PostMapping("/next-round")
     public String nextRound(Model model) {
 

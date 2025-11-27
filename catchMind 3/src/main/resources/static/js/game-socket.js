@@ -297,14 +297,9 @@
   }
 
   function handleRoundEnd(msg) {
-      // JS로 POST form 만들어서 자동 submit  (라운드 끝나고 이동 오류 해결)
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = "/game/next-round";
-
-      document.body.appendChild(form);
-      form.submit();
+    window.location.href = "/game/answer";  // GET 요청 → 위 @GetMapping 타서 midResult 렌더
   }
+
 
   function handleGameOver(msg) {
     window.location.href = "/game/final";
