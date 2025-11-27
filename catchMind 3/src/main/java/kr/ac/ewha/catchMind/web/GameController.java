@@ -54,14 +54,11 @@ public class GameController {
 
         // 새로 수정한 부분!
         if (p1.getRole() == Role.DRAWER) {
-            // 1. 내가 그리는 사람(DRAWER)일 때
             addCommonAttributes(model);
             model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
-            return "mainUI_Drawer"; // 그림판 화면
+            return "mainUI_Drawer";
 
         } else {
-            // 2. 내가 맞히는 사람(GUESSER)일 때
-            // guesser 화면을 띄워주는 @GetMapping("/guesser") 경로로 토스!
             return "redirect:/game/guesser";
         }
         // 여기까지
