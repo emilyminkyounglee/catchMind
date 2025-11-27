@@ -3,7 +3,9 @@ package kr.ac.ewha.catchMind.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import kr.ac.ewha.catchMind.model.GameHistory;
 import kr.ac.ewha.catchMind.model.WordDictionary;
+import kr.ac.ewha.catchMind.repository.GameHistoryRepository;
 import kr.ac.ewha.catchMind.repository.PlayerRepository;
 import kr.ac.ewha.catchMind.repository.WordDictionaryRepository;
 import org.springframework.stereotype.Service;
@@ -24,9 +26,14 @@ public class GameService {
     private static final long ROUND_LIMIT_MS = 90_000;
     private final PlayerRepository playerRepository;
     private final WordDictionaryRepository wordDictionaryRepository;
-    public GameService(PlayerRepository playerRepository, WordDictionaryRepository wordDictionaryRepository) {
+    private final GameHistoryRepository gameHistoryRepository;
+
+
+
+    public GameService(PlayerRepository playerRepository, WordDictionaryRepository wordDictionaryRepository, GameHistoryRepository gameHistoryRepository) {
         this.playerRepository = playerRepository;
         this.wordDictionaryRepository = wordDictionaryRepository;
+        this.gameHistoryRepository = gameHistoryRepository;
     }
 
     public boolean isGameOver() // 현재 게임이 종료되었는지 확인 aka 6라운드까지 진행 완료 했는지
@@ -202,5 +209,26 @@ public class GameService {
     public String getAnswer() {
         // TODO Auto-generated method stub
         return this.answer;
+    }
+
+    public void saveGameHistory(Player p, char[] roundResult, int[] roundScore, int totalScore) {
+        GameHistory history = new GameHistory();
+        history.setPlayer(p);
+        history.setRound1Result(roundResult[0]);
+        history.setRound1Score(roundScore[0]);
+        history.setRound2Result(roundResult[1]);
+        history.setRound2Score(roundScore[1]);
+        history.setRound3Result(roundResult[2]);
+        history.setRound3Score(roundScore[2]);
+        history.setRound4Result(roundResult[3]);
+        history.setRound4Score(roundScore[3]);
+        history.setRound5Result(roundResult[4]);
+        history.setRound5Score(roundScore[4]);
+        history.setRound6Result(roundResult[5]);
+        history.setRound6Score(roundScore[5]);
+
+        history.setTotalScore(totalScore);
+        p.addGameHistory(history);
+        gameHistoryRepository.save(history);
     }
 }

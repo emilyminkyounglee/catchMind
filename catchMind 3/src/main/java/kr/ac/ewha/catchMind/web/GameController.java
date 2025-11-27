@@ -122,5 +122,14 @@ public class GameController {
         return "mainUI_Drawer";
     }
 
+    @PostMapping("/mypage")
+    public String showMyPage(@RequestParam String userId, Model model) {
+        Player p = gameService.loadPlayer(userId);
+        model.addAttribute("player", p);
+        model.addAttribute("totalScore", p.getTotalScore());
+        model.addAttribute("gamesPlayed", p.getGamesPlayed());
+        model.addAttribute("history", p.getGameHistory());
+        return "myPage";
+    }
 
 }
