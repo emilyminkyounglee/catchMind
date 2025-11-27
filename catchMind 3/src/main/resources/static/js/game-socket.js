@@ -236,7 +236,7 @@
     }
   }
 
-  let timerInterval = null;
+  /*let timerInterval = null;
 
   function startTimer(limitSeconds, serverStartTime) {
     if (timerInterval) clearInterval(timerInterval);
@@ -260,41 +260,126 @@
         timerInterval = null;
       }
     }, 250);
-  }
+  }*/
 
+    // ===============================
+    // [수정] 단순 타이머 로직 (90초 카운트다운 + TIME_OVER 전송)
+    // ===============================
+    let timerInterval = null;
+
+    function startSimpleTimer() {
+      let timeLeft = 90; // 1분 30초
+      const timerElement = document.getElementById("timer-display"); // HTML에서 id="timer"인 태그 찾기
+
+      if (timerInterval) clearInterval(timerInterval);
+
+      // 즉시 화면 한번 갱신
+      updateTimerDisplay(timerElement, timeLeft);
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+
+        updateTimerDisplay(timerElement, timeLeft);
+
+        // 0초가 되면 서버로 신호 보내기
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval); // 타이머 멈춤
+
+          // 소켓이 연결되어 있으면 TIME_OVER 전송
+          if (socket.readyState === WebSocket.OPEN) {
+            console.log("[Timer] 시간 종료! 서버로 TIME_OVER 전송");
+            send({ type: "TIME_OVER" });
+          }
+        }
+      }, 1000);
+    }
+
+    // 화면에 분:초 (01:30) 형태로 찍어주는 도우미 함수
+    function updateTimerDisplay(element, secondsLeft) {
+      if (!element) return;
+
+      let min = Math.floor(secondsLeft / 60);
+      let sec = secondsLeft % 60;
+
+      // 0 -> "00", 9 -> "09" 로 만들기
+      if (min < 10) min = "0" + min;
+      if (sec < 10) sec = "0" + sec;
+
+      element.textContent = min + ":" + sec;
+    }
+
+    // 페이지 로드 되자마자 타이머 시작!
+    startSimpleTimer();
+
+    // 여기까지 타이머 추가!
+
+//  function handleRoundStart(msg) {
+//    const roundSpan = document.getElementById("round-info");
+//    if (roundSpan && typeof msg.round === "number") {
+//      roundSpan.textContent = msg.round + " / 6";
+//    }
+//
+//    if (typeof msg.triesLeft === "number") {
+//      renderAttempts(msg.triesLeft);
+//    }
+//
+//    const scoreSpan = document.getElementById("score");
+//    if (scoreSpan && typeof msg.totalScore === "number") {
+//      scoreSpan.textContent = msg.totalScore;
+//    }
+//
+//    // Drawer에게만 제시어 표시
+//    if (myRole === "DRAWER") {
+//      const wordEl = document.getElementById("drawer-word");
+//      if (wordEl && msg.answerForDrawer) {
+//        wordEl.textContent = msg.answerForDrawer;
+//      }
+//    }
+//
+//    clearCanvas();
+//    hasPrevPoint = false;
+//
+//    if (
+//      typeof msg.limitSeconds === "number" &&
+//      typeof msg.serverStartTime === "number"
+//    ) {
+//      startTimer(msg.limitSeconds, msg.serverStartTime);
+//    }
+//  }
+
+  // 여기 추가!
   function handleRoundStart(msg) {
-    const roundSpan = document.getElementById("round-info");
-    if (roundSpan && typeof msg.round === "number") {
-      roundSpan.textContent = msg.round + " / 6";
-    }
-
-    if (typeof msg.triesLeft === "number") {
-      renderAttempts(msg.triesLeft);
-    }
-
-    const scoreSpan = document.getElementById("score");
-    if (scoreSpan && typeof msg.totalScore === "number") {
-      scoreSpan.textContent = msg.totalScore;
-    }
-
-    // Drawer에게만 제시어 표시
-    if (myRole === "DRAWER") {
-      const wordEl = document.getElementById("drawer-word");
-      if (wordEl && msg.answerForDrawer) {
-        wordEl.textContent = msg.answerForDrawer;
+      const roundSpan = document.getElementById("round-info");
+      if (roundSpan && typeof msg.round === "number") {
+        roundSpan.textContent = msg.round + " / 6";
       }
-    }
 
-    clearCanvas();
-    hasPrevPoint = false;
+      if (typeof msg.triesLeft === "number") {
+        renderAttempts(msg.triesLeft);
+      }
 
-    if (
-      typeof msg.limitSeconds === "number" &&
-      typeof msg.serverStartTime === "number"
-    ) {
-      startTimer(msg.limitSeconds, msg.serverStartTime);
+      const scoreSpan = document.getElementById("score");
+      if (scoreSpan && typeof msg.totalScore === "number") {
+        scoreSpan.textContent = msg.totalScore;
+      }
+
+      // Drawer에게만 제시어 표시
+      if (myRole === "DRAWER") {
+        const wordEl = document.getElementById("drawer-word");
+        if (wordEl && msg.answerForDrawer) {
+          wordEl.textContent = msg.answerForDrawer;
+        }
+      }
+
+      clearCanvas();
+      hasPrevPoint = false;
+
+      // [수정] startTimer(...) 호출하는 코드 삭제함!
+      // 페이지 로드 시 startSimpleTimer()가 이미 실행되고 있으므로 여기서 또 부를 필요 없음.
+      // 만약 강제로 다시 시작하고 싶다면 startSimpleTimer(); 를 호출하면 됨.
+      startSimpleTimer();
     }
-  }
+    // 여기까지
 
   function handleRoundEnd(msg) {
       // JS로 POST form 만들어서 자동 submit  (라운드 끝나고 이동 오류 해결)
