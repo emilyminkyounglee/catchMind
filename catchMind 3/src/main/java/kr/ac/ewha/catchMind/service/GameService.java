@@ -115,19 +115,19 @@ public class GameService {
         tries = 5;
         time = System.currentTimeMillis();
     }
-    public void setPlayerInfo(Player player, int i, String name)
-    {
-
-        player.setName(name);
-        if  (i%2 == 0)
-        {
-            player.setRole(Role.DRAWER);
-        }
-        else
-        {
-            player.setRole(Role.GUESSER);
-        }
-    }
+//    public void setPlayerInfo(Player player, int i, String name)
+//    {
+//
+//        player.setName(name);
+//        if  (i%2 == 0)
+//        {
+//            player.setRole(Role.DRAWER);
+//        }
+//        else
+//        {
+//            player.setRole(Role.GUESSER);
+//        }
+//    }
     public void changeRoles(Player p1, Player p2) //역할 바꿔주기
     {
         Role p2Role = p1.getRole();
@@ -211,6 +211,7 @@ public class GameService {
         return this.answer;
     }
 
+
     public void saveGameHistory(Player p, char[] roundResult, int[] roundScore, int totalScore) {
         GameHistory history = new GameHistory();
         history.setPlayer(p);
@@ -230,5 +231,15 @@ public class GameService {
         history.setTotalScore(totalScore);
         p.addGameHistory(history);
         gameHistoryRepository.save(history);
+    }
+
+    public void setRoleRandomly(Player p1, Player p2) {
+        if (Math.random() < 0.5) {
+            p1.setRole(Role.DRAWER);
+            p2.setRole(Role.GUESSER);
+        } else {
+            p1.setRole(Role.GUESSER);
+            p2.setRole(Role.DRAWER);
+        }
     }
 }
