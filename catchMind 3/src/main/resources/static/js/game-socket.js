@@ -297,7 +297,13 @@
   }
 
   function handleRoundEnd(msg) {
-    window.location.href = `/game/mid?round=${msg.round}`;
+      // JS로 POST form 만들어서 자동 submit  (라운드 끝나고 이동 오류 해결)
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/game/next-round";
+
+      document.body.appendChild(form);
+      form.submit();
   }
 
   function handleGameOver(msg) {
