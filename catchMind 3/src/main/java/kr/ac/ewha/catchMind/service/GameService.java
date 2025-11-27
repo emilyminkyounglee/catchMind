@@ -197,4 +197,10 @@ public class GameService {
             return hint;
         }
     }
+
+    // 새로 추가 메서드 - 조서연
+    public String getAnswer() {
+        // TODO Auto-generated method stub
+        return this.answer;
+    }
 }
