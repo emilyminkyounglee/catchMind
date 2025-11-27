@@ -60,7 +60,7 @@ public class GameController {
     @GetMapping("/guesser")
     public String showGuesser(Model model) {
         // 게임 시작 전에 접근하면 홈으로 보내기
-        if (p1.getName() == null || p1.getRole() == null ||
+        if (p1 == null || p2 == null || p1.getName() == null || p1.getRole() == null ||
                 p2.getName() == null || p2.getRole() == null) {
             return "redirect:/";
         }
@@ -103,6 +103,8 @@ public class GameController {
     public String nextRound(Model model) {
 
         if (gameService.isGameOver()) {
+            gameService.saveGameHistory(p1);
+            gameService.saveGameHistory(p2);
             gameService.saveGameData(p1);
             gameService.saveGameData(p2);
             model.addAttribute("totalScore", gameService.getScore());
@@ -128,7 +130,7 @@ public class GameController {
         model.addAttribute("player", p);
         model.addAttribute("totalScore", p.getTotalScore());
         model.addAttribute("gamesPlayed", p.getGamesPlayed());
-        model.addAttribute("history", p.getGameHistory());
+        model.addAttribute("histories", p.getGameHistory());
         return "myPage";
     }
 
