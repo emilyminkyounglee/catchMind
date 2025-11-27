@@ -72,9 +72,35 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 handleGuess(gameMsg);
                 break;
 
+            // 시간 초과
+            case "TIME_OVER":
+                handleTimeOver();
+                break;    
+
             default:
                 System.out.println(type + ": 제대로 된 형식이 아닙니다.");
         }
+    }
+
+    private void handleTimeOver() throws Exception {
+        System.out.println("시간 초과! 라운드 종료...");
+
+        gameService.isRoundOver(false);
+
+        // 2. 종료 메시지 전송 (ROUND_END)
+        GameMessage endMsg = new GameMessage();
+        endMsg.setType("ROUND_END");
+        endMsg.setRoundSuccess(false);
+        endMsg.setText("시간 초과");
+
+        // 현재 정보 갱신
+        endMsg.setAnswer(gameService.getAnswer());
+        endMsg.setTotalScore(gameService.getScore());
+
+        // 라운드 번호 처리
+        endMsg.setRound(gameService.getCurrentRound() - 1);
+
+        broadcast(objectMapper.writeValueAsString(endMsg));
     }
 
     // 소켓 종료 시
