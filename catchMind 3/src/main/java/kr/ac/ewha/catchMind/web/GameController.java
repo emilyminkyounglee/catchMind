@@ -1,5 +1,6 @@
 package kr.ac.ewha.catchMind.web;
 
+import jakarta.servlet.http.HttpSession;
 
 import kr.ac.ewha.catchMind.model.Player;
 import kr.ac.ewha.catchMind.model.Role;
@@ -33,11 +34,20 @@ public class GameController {
     }
 
     @PostMapping("/start")
-    public String startGame(@RequestParam String userId, Model model) {
+    public String startGame(@RequestParam String userId,
+                            HttpSession session,
+                            Model model) {
+
+        // 이 세션의 유저 ID를 저장해두기 (나중에 next-round에서 사용)
+        session.setAttribute("userId", userId);
 
         if ("wkvmtlf2MEJ".equals(userId)) {
             return  "redirect:/admin/words";
         }
+
+        // 현재 구조: p1, p2 둘 다 같은 userId 로딩
+        // 나중에 진짜 2인 구조로 바꾸려면 여기 로직을
+        // "첫 번째 접속자는 p1, 두 번째 접속자는 p2" 식으로 분리해야 함
         p1 = gameService.loadPlayer(userId);
         p2 = gameService.loadPlayer(userId);
 
@@ -48,23 +58,24 @@ public class GameController {
         String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
-        // 새로 수정한 부분!
-        if (p1.getRole() == Role.DRAWER) {
-            addCommonAttributes(model);
+        // 요청 보낸 나(me)를 p1/p2 중에서 찾기
+        Player me = p1;
+        if (p2 != null && userId.equals(p2.getName())) {
+            me = p2;
+        }
+
+        addCommonAttributes(model);
+
+        if (me.getRole() == Role.DRAWER) {
             model.addAttribute("wordForDrawer", answerWord);
             return "mainUI_Drawer";
-
         } else {
-            return "redirect:/game/guesser";
+            // redirect 말고 바로 Guesser 템플릿을 리턴해도 됨
+            return "mainUI_Guesser";
         }
-        // 여기까지
-
-//        // drawer 화면에 넘길 정보들
-//        addCommonAttributes(model);
-//        model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
-//
-//        return "mainUI_Drawer";
     }
+
+
     @GetMapping("/guesser")
     public String showGuesser(Model model) {
         // 게임 시작 전에 접근하면 홈으로 보내기
@@ -107,9 +118,30 @@ public class GameController {
 
         return "midResult";    // templates/midResult.html
     }
-    @PostMapping("/next-round")
-    public String nextRound(Model model) {
 
+    //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET
+    @GetMapping("/answer")
+    public String showMidResult(Model model) {
+
+        boolean roundSuccess = gameService.getCurrentRoundScore() > 0;
+
+        model.addAttribute("round", gameService.getCurrentRound() - 1); // 방금 끝난 라운드
+        model.addAttribute("roundSuccess", roundSuccess);
+        model.addAttribute("roundScore", gameService.getCurrentRoundScore());
+        model.addAttribute("totalScore", gameService.getScore());
+        model.addAttribute("answerWord", gameService.getAnswer());
+
+        if (gameService.isGameOver()) {
+            return "finalResult";
+        }
+
+        return "midResult";
+    }
+
+    @PostMapping("/next-round")
+    public String nextRound(HttpSession session, Model model) {
+
+        // 1) 게임이 이미 끝났으면 저장 후 최종 결과
         if (gameService.isGameOver()) {
             gameService.saveGameHistory(p1);
             gameService.saveGameHistory(p2);
@@ -119,23 +151,46 @@ public class GameController {
             return "finalResult";
         }
 
+        // 2) 두 플레이어 역할 교대 (DRAWER ↔ GUESSER)
         gameService.changeRoles(p1, p2);
 
+        // 3) 새 라운드 세팅 (tries 초기화, 타이머 리셋)
         gameService.newRound();
 
-        String answerWord = gameService.getWordForDrawer();
-        gameService.setAnswer(answerWord);
+        // 4) 공통 정보 (라운드, 점수, 남은 기회 등)
+        addCommonAttributes(model);
 
+        // 5) 이 요청을 보낸 세션의 userId
+        String userId = (String) session.getAttribute("userId");
 
-        if (p1.getRole() == Role.DRAWER) {
-            addCommonAttributes(model);
+        // 6) p1/p2 중에서 "나(me)" 찾기
+        Player me = null;
+        if (p1 != null && userId != null && userId.equals(p1.getName())) {
+            me = p1;
+        } else if (p2 != null && userId != null && userId.equals(p2.getName())) {
+            me = p2;
+        }
+
+        if (me == null) {
+            // 비정상 접근이면 그냥 홈으로
+            return "redirect:/";
+        }
+
+        // 7) 내 역할에 따라 Drawer / Guesser 화면 분기
+        if (me.getRole() == Role.DRAWER) {
+            // Drawer만 이번 라운드 제시어를 받음
+            String answerWord = gameService.getWordForDrawer();
+            gameService.setAnswer(answerWord);
             model.addAttribute("wordForDrawer", answerWord);
             return "mainUI_Drawer";
         } else {
-            return "redirect:/game/guesser";
+            // Guesser는 제시어 없이 추측 화면
+            return "mainUI_Guesser";
         }
-
     }
+
+
+
 
     @PostMapping("/mypage")
     public String showMyPage(@RequestParam String userId, Model model) {
