@@ -25,17 +25,27 @@
               th:text="${round} + ' / 6'">1 / 6</span>
     </div>
 
-    <!-- 플레이어 이름 -->
+    <!-- 내 정보 -->
     <div class="mb-2">
-        <span class="fw-semibold me-2">Drawer</span>
-        <span th:text="${drawerName}">플레이어 1</span>
+        <span class="fw-semibold me-2">내 이름</span>
+        <span th:text="${myName}">나</span>
     </div>
 
     <div class="mb-2">
-        <span class="fw-semibold me-2">Guesser</span>
-        <span th:text="${guesserName}">플레이어 2</span>
+        <span class="fw-semibold me-2">내 역할</span>
+        <span th:text="${myRole}">DRAWER</span>
     </div>
 
+    <!-- 상대 정보 -->
+    <div class="mb-2">
+        <span class="fw-semibold me-2">상대 이름</span>
+        <span th:text="${otherName}">상대</span>
+    </div>
+
+    <div class="mb-2">
+        <span class="fw-semibold me-2">상대 역할</span>
+        <span th:text="${otherRole}">GUESSER</span>
+    </div>
     <!-- 타이머 (지금은 JS로 채울 예정, 서버 값은 나중에 연결해도 됨) -->
     <div class="mb-2">
         <span class="fw-semibold me-2">Timer</span>

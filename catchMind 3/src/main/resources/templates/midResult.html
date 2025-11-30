@@ -53,7 +53,9 @@
                 <!-- 다음 라운드 진행 버튼 -->
                 <div class="d-flex justify-content-center gap-2 mt-2">
                     <form action="/game/next-round" method="post" class="d-inline">
+                        <!-- input type="hidden" name="userId" th:value="${myName}" / -->
                         <button type="submit" class="btn btn-primary">다음 라운드 계속하기</button>
+                        <script src="/js/midresult-socket.js"></script>
                     </form>
                 </div>
             </div>

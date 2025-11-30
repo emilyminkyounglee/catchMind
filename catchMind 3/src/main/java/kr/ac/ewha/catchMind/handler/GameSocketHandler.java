@@ -19,7 +19,7 @@ import kr.ac.ewha.catchMind.service.GameService;
 public class GameSocketHandler extends TextWebSocketHandler {
 
     // 접속한 클라이언트 세션들을 모아두는 리스트, thread-safe 리스트로 세션관리
-    private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
+    private static final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
     //private final GameService gameService;
 
@@ -27,8 +27,34 @@ public class GameSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 생성자 주입
-    public GameSocketHandler(/*GameService gameService*/) {
-        //this.gameService = gameService;
+//    public GameSocketHandler(/*GameService gameService*/) {
+//        //this.gameService = gameService;
+//    }
+    public GameSocketHandler() {
+
+    }
+
+    //    public static void broadcastStatic(String jsonMessage){
+//        for (WebSocketSession session : sessions) {
+//            if(session.isOpen()){
+//                try {
+//                    session.sendMessage(new TextMessage(jsonMessage));
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
+    public void broadcast(String jsonMessage) {
+        for (WebSocketSession session : sessions) {
+            if (session.isOpen()) {
+                try {
+                    session.sendMessage(new TextMessage(jsonMessage));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     // 소켓 연결 시
@@ -41,7 +67,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     // 메시지 수신 시
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        String payload = message.getPayload();	// 클라이언트가 보낸 JSON 문자열 꺼내기
+        String payload = message.getPayload();    // 클라이언트가 보낸 JSON 문자열 꺼내기
 
         // JSON > GameMessage 객체 변환
         GameMessage gameMsg = objectMapper.readValue(payload, GameMessage.class);
@@ -164,16 +190,16 @@ public class GameSocketHandler extends TextWebSocketHandler {
 //        }
 //    }
 
-    // 전체 방송
-    private void broadcast(String jsonMessage) {
-        for (WebSocketSession s : sessions) {
-            if (s.isOpen()) {
-                try {
-                    s.sendMessage(new TextMessage(jsonMessage));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
+//    // 전체 방송
+//    private void broadcast(String jsonMessage) {
+//        for (WebSocketSession s : sessions) {
+//            if (s.isOpen()) {
+//                try {
+//                    s.sendMessage(new TextMessage(jsonMessage));
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
 }

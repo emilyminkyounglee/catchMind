@@ -9,6 +9,7 @@ import kr.ac.ewha.catchMind.model.WordDictionary;
 import kr.ac.ewha.catchMind.repository.GameHistoryRepository;
 import kr.ac.ewha.catchMind.repository.PlayerRepository;
 import kr.ac.ewha.catchMind.repository.WordDictionaryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import kr.ac.ewha.catchMind.model.Player;
@@ -31,6 +32,9 @@ public class GameService {
     private final PlayerRepository playerRepository;
     private final WordDictionaryRepository wordDictionaryRepository;
     private final GameHistoryRepository gameHistoryRepository;
+
+    private boolean needInitNextRound = false;
+
 
 
 
@@ -70,6 +74,9 @@ public class GameService {
             tries = 5;
             rounds++;
             isOver = true;
+        }
+        if (isOver) {
+            needInitNextRound = true;
         }
         return isOver;
     }
@@ -121,6 +128,7 @@ public class GameService {
         roundScore = 0;
         Arrays.fill(roundResult, '-');
         Arrays.fill(roundScores, 0);
+        needInitNextRound = false;
     }
     public void newRound() // 새 라운드 시작할때 (얘도 무조건 처음에 부르기)
     {
@@ -168,20 +176,20 @@ public class GameService {
         return wordDictionary.getWord();
     }
     public String getDrawerName(Player p1, Player p2) {
-        if (p1 != null && p1.getRole().equals(Role.DRAWER)) {
+        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.DRAWER)) {
             return p1.getName();
         }
-        if (p2 != null && p2.getRole().equals(Role.DRAWER)) {
+        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.DRAWER)) {
             return p2.getName();
         }
         return "Drawer"; // 기본값
     }
 
     public String getGuesserName(Player p1, Player p2) {
-        if (p1 != null && p1.getRole().equals(Role.GUESSER)) {
+        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.GUESSER)) {
             return p1.getName();
         }
-        if (p2 != null && p2.getRole().equals(Role.GUESSER)) {
+        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.GUESSER)) {
             return p2.getName();
         }
         return "Guesser"; // 기본값
@@ -223,13 +231,16 @@ public class GameService {
         return this.answer;
     }
 
+    @Transactional
     public void saveGameHistory(Player p) {
         saveGameHistory(p, roundResult, roundScores, score);
     }
 
+    @Transactional
     public void saveGameHistory(Player p, char[] roundResult, int[] roundScore, int totalScore) {
         GameHistory history = new GameHistory();
         history.setPlayer(p);
+
         history.setRound1Result(roundResult[0]);
         history.setRound1Score(roundScore[0]);
         history.setRound2Result(roundResult[1]);
@@ -244,7 +255,7 @@ public class GameService {
         history.setRound6Score(roundScore[5]);
 
         history.setTotalScore(totalScore);
-        p.addGameHistory(history);
+       // p.addGameHistory(history);
         gameHistoryRepository.save(history);
     }
 
@@ -256,5 +267,17 @@ public class GameService {
             p1.setRole(Role.GUESSER);
             p2.setRole(Role.DRAWER);
         }
+    }
+
+    public synchronized void prepareNextRound(Player p1, Player p2)
+    {
+        if (!needInitNextRound || isGameOver()) {
+            return;
+        }
+        changeRoles(p1, p2);
+        newRound();
+        String answerWord = getWordForDrawer();
+        setAnswer(answerWord);
+        needInitNextRound = false;
     }
 }
