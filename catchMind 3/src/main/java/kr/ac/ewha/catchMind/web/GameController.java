@@ -87,6 +87,12 @@ public class GameController {
 //        if (p2 != null && userId.equals(p2.getName())) {
 //            me = p2;
 //        }
+        if(gameService.isGameOver()) {
+            System.out.println("[LOG] reset game");
+            p1 = null;
+            p2 = null;
+            gameService.setupNewGame(null, null);
+        }
         Player me;
         if (p1 == null) {
             p1 = gameService.loadPlayer(userId);
