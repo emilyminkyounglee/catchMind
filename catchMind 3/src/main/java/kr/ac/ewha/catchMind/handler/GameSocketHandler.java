@@ -21,18 +21,18 @@ public class GameSocketHandler extends TextWebSocketHandler {
     // 접속한 클라이언트 세션들을 모아두는 리스트, thread-safe 리스트로 세션관리
     private static final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
-    //private final GameService gameService;
+    private final GameService gameService;
 
     // JSON 문자열 <> java 객체 GameMessage 변환
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 생성자 주입
-//    public GameSocketHandler(/*GameService gameService*/) {
-//        //this.gameService = gameService;
-//    }
-    public GameSocketHandler() {
-
+     //생성자 주입
+    public GameSocketHandler(GameService gameService) {
+        this.gameService = gameService;
     }
+//    public GameSocketHandler() {
+//
+//    }
 
     //    public static void broadcastStatic(String jsonMessage){
 //        for (WebSocketSession session : sessions) {
@@ -94,10 +94,12 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 broadcast(payload);
                 break;
 
+                //(2) HTTP 방식으로 수정하기 => 정답 체크가 두 군데에서 중복 실행되지 않도록
+                //(1) 아령 - 정답을 같이 공유하기 위해서 주석 해제 (12.01)
 //            // 정답 맞히기
-//            case "GUESS":
-//                handleGuess(gameMsg);
-//                break;
+            case "GUESS":
+                handleGuess(gameMsg);
+                break;
 
 //            // 시간 초과
 //            case "TIME_OVER":
@@ -137,58 +139,61 @@ public class GameSocketHandler extends TextWebSocketHandler {
         System.out.println("플레이어 접속 해제: " + session.getId());
     }
 
-//    // 정답 처리 로직
-//    private void handleGuess(GameMessage inputMsg) throws Exception {
-//        // 정답 체크
-//        boolean isCorrect = gameService.checkAnswer(inputMsg.getGuess());
-//
-//        // 라운드 종료 여부 체크
-//        boolean isRoundOver = gameService.isRoundOver(isCorrect);
-//
-//        // GUESS_RESULT 메시지 생성
-//        GameMessage result = new GameMessage();
-//        result.setType("GUESS_RESULT");
-//        result.setCorrect(isCorrect);
-//        result.setAnswer(gameService.getAnswer());
-//
-//        // 현재 점수 및 상태 정보 불러오기
-//        result.setTriesLeft(gameService.getTriesLeft());
-//        result.setTotalScore(gameService.getScore());
-//        result.setRoundScore(gameService.getCurrentRoundScore());
-//
-//        // 라운드 번호 처리(-1해야함)
-//        int currentRound = gameService.getCurrentRound();
-//        if (isRoundOver) {
-//            result.setRound(currentRound - 1);
-//        } else {
-//            result.setRound(currentRound);
-//        }
-//
-//        // 안내 텍스트
-//        if (isCorrect) {
-//            result.setText("정답입니다!");
-//        } else {
-//            result.setText("틀렸습니다. 다시 시도해보세요!");
-//        }
-//
-//        // 결과 전송
-//        broadcast(objectMapper.writeValueAsString(result));
-//
-//        // 라운드 종료 > ROUND_END 메시지 추가 전송
-//        if (isRoundOver) {
-//            GameMessage endMsg = new GameMessage();
-//            endMsg.setType("ROUND_END");
-//            endMsg.setRoundSuccess(isCorrect); // 맞혀서 끝난 건지, 5회 끝나서 종료인건지
-//            endMsg.setText("라운드 종료!");
-//
-//            // 라운드 종료 시 점수/정답 확실하게 다시 보내주기
-//            endMsg.setTotalScore(gameService.getScore());
-//            endMsg.setAnswer(gameService.getAnswer());
-//            endMsg.setRound(isRoundOver ? currentRound - 1 : currentRound);
-//
-//            broadcast(objectMapper.writeValueAsString(endMsg));
-//        }
-//    }
+
+
+    //(1) 아령: handleGuess() 함수 주석 해제
+    // 정답 처리 로직
+    private void handleGuess(GameMessage inputMsg) throws Exception {
+        // 정답 체크
+        boolean isCorrect = gameService.checkAnswer(inputMsg.getGuess());
+
+        // 라운드 종료 여부 체크
+        boolean isRoundOver = gameService.isRoundOver(isCorrect);
+
+        // GUESS_RESULT 메시지 생성
+        GameMessage result = new GameMessage();
+        result.setType("GUESS_RESULT");
+        result.setCorrect(isCorrect);
+        result.setAnswer(gameService.getAnswer());
+
+        // 현재 점수 및 상태 정보 불러오기
+        result.setTriesLeft(gameService.getTriesLeft());
+        result.setTotalScore(gameService.getScore());
+        result.setRoundScore(gameService.getCurrentRoundScore());
+
+        // 라운드 번호 처리(-1해야함)
+        int currentRound = gameService.getCurrentRound();
+        if (isRoundOver) {
+            result.setRound(currentRound - 1);
+        } else {
+            result.setRound(currentRound);
+        }
+
+        // 안내 텍스트
+        if (isCorrect) {
+            result.setText("정답입니다!");
+        } else {
+            result.setText("틀렸습니다. 다시 시도해보세요!");
+        }
+
+        // 결과 전송
+        broadcast(objectMapper.writeValueAsString(result));
+
+        // 라운드 종료 > ROUND_END 메시지 추가 전송
+        if (isRoundOver) {
+            GameMessage endMsg = new GameMessage();
+            endMsg.setType("ROUND_END");
+            endMsg.setRoundSuccess(isCorrect); // 맞혀서 끝난 건지, 5회 끝나서 종료인건지
+            endMsg.setText("라운드 종료!");
+
+            // 라운드 종료 시 점수/정답 확실하게 다시 보내주기
+            endMsg.setTotalScore(gameService.getScore());
+            endMsg.setAnswer(gameService.getAnswer());
+            endMsg.setRound(isRoundOver ? currentRound - 1 : currentRound);
+
+            broadcast(objectMapper.writeValueAsString(endMsg));
+        }
+    }
 
 //    // 전체 방송
 //    private void broadcast(String jsonMessage) {

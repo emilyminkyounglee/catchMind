@@ -174,67 +174,73 @@
   const guessForm = document.getElementById("guess-form");
   const answerInput = document.getElementById("answer-input");
 //
-//  if (guessForm && answerInput) {
-//    guessForm.addEventListener("submit", (e) => {
-//      e.preventDefault();
-//
-//      const value = answerInput.value.trim();
-//      if (!value) return;
-//
-//      send({
-//        type: "GUESS",
-//        guess: value,
-//      });
-//
-//      answerInput.value = "";
-//      answerInput.focus();
-//    });
-//  }
+
+
+//(1) 아령 : 정답 추리 동기화 (주석 해제 / 12.01)
+  if (guessForm && answerInput) {
+    guessForm.addEventListener("submit", (e) => {
+      e.preventDefault(); //정답 시도는 웹소켓에서 실행됨
+
+      const value = answerInput.value.trim();
+      if (!value) return;
+
+      send({
+        type: "GUESS",
+        guess: value,
+      });
+
+      answerInput.value = "";
+      answerInput.focus();
+    });
+  }
 
   // ===============================
   // 5. 라운드/점수/타이머 & 결과 UI
   // ===============================
 
   // 네잎클로버 아이콘 렌더링
-//  function renderAttempts(triesLeft) {
-//    const container = document.getElementById("attempt-icons");
-//    if (!container) return;
+  //(1) 아령 : 정답 추측 결과 동기화 해결 ~> 주석 해제 (12.1) (UI 렌더링)
+  function renderAttempts(triesLeft) {
+    const container = document.getElementById("attempt-icons");
+    if (!container) return;
+
+    container.innerHTML = "";
+    for (let i = 0; i < triesLeft; i++) {
+      const img = document.createElement("img");
+      img.src = "/image/clover_icon.png"; // 정적 경로 확인 필요
+      img.alt = "Attempt";
+      img.style.height = "18px";
+      img.style.margin = "0 2px";
+      container.appendChild(img);
+    }
+  }
 //
-//    container.innerHTML = "";
-//    for (let i = 0; i < triesLeft; i++) {
-//      const img = document.createElement("img");
-//      img.src = "/image/clover_icon.png"; // 정적 경로 확인 필요
-//      img.alt = "Attempt";
-//      img.style.height = "18px";
-//      img.style.margin = "0 2px";
-//      container.appendChild(img);
-//    }
-//  }
-//
-//  function handleGuessResult(msg) {
-//    const resultDiv = document.getElementById("guess-result");
-//    if (resultDiv) {
-//      resultDiv.textContent = msg.correct
-//        ? "정답입니다!"
-//        : "틀렸습니다. 다시 시도해보세요!";
-//      resultDiv.className =
-//        "mt-3 fw-semibold " + (msg.correct ? "text-success" : "text-danger");
-//    }
-//
-//    if (typeof msg.triesLeft === "number") {
-//      renderAttempts(msg.triesLeft);
-//    }
-//
-//    const scoreSpan = document.getElementById("score");
-//    if (scoreSpan && typeof msg.totalScore === "number") {
-//      scoreSpan.textContent = msg.totalScore;
-//    }
-//
-//    const roundSpan = document.getElementById("round-info");
-//    if (roundSpan && typeof msg.round === "number") {
-//      roundSpan.textContent = msg.round + " / 6";
-//    }
-//  }
+
+//    (1) 아령 : 정답 추측 결과 동기화 해결 ~> 주석 해제 (12.1) // (UI렌더링)
+  function handleGuessResult(msg) {
+    const resultDiv = document.getElementById("guess-result");
+    if (resultDiv) {
+      resultDiv.textContent = msg.correct
+        ? "정답입니다!"
+        : "틀렸습니다. 다시 시도해보세요!";
+      resultDiv.className =
+        "mt-3 fw-semibold " + (msg.correct ? "text-success" : "text-danger");
+    }
+
+    if (typeof msg.triesLeft === "number") {
+      renderAttempts(msg.triesLeft);
+    }
+
+    const scoreSpan = document.getElementById("score");
+    if (scoreSpan && typeof msg.totalScore === "number") {
+      scoreSpan.textContent = msg.totalScore;
+    }
+
+    const roundSpan = document.getElementById("round-info");
+    if (roundSpan && typeof msg.round === "number") {
+      roundSpan.textContent = msg.round + " / 6";
+    }
+  }
 //
 //  let timerInterval = null;
 //
@@ -338,9 +344,10 @@
         handleDraw(msg);
         break;
 //
-//      case "GUESS_RESULT":
-//        handleGuessResult(msg);
-//        break;
+     //(1) 아령 : 주석 해제 (12.1) //추측 결과 동기화 (UI 렌더링)
+      case "GUESS_RESULT":
+        handleGuessResult(msg);
+        break;
 //
 //      case "ROUND_START":
 //        handleRoundStart(msg);

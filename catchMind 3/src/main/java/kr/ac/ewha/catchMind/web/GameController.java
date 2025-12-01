@@ -148,65 +148,73 @@ public class GameController {
         addCommonAttributes(model, me);
         return "mainUI_Guesser";  // templates/mainUI_Guesser.html
     }
+
     @PostMapping("/answer")
     public String submitAnswer(@RequestParam String answer, Model model, @RequestParam String userId) {
-
-        Player me = null;
-        if (p1 !=null && userId != null && userId.equals(p1.getName())) {
-            me = p1;
-        }
-        else if (p2 !=null && userId != null && userId.equals(p2.getName())) {
-            me = p2;
-        }
-        if (me == null) {
-            return "redirect:/";
-        }
-        boolean correct = gameService.checkAnswer(answer);
-        boolean roundOver = gameService.isRoundOver(correct);
-
-        if (!roundOver) {
-            // 라운드 안 끝났으면 다시 Guesser 화면
-            addCommonAttributes(model, me);
-            model.addAttribute("lastResult", correct);
-            return "mainUI_Guesser";
-        }
-//        if (!gameService.isGameOver()) {
-//            gameService.changeRoles(p1, p2);
-//        }
-
-
-        boolean roundSuccess = gameService.getCurrentRoundScore() > 0;
-
-        model.addAttribute("round", gameService.getCurrentRound() - 1); // 방금 끝난 라운드
-        model.addAttribute("roundSuccess", roundSuccess);
-        model.addAttribute("roundScore", gameService.getCurrentRoundScore());
-        model.addAttribute("totalScore", gameService.getScore());
-        model.addAttribute("answerWord", gameService.getAnswer());
-
-        model.addAttribute("myName", me.getName());
-        Player other = (me == p1 ? p2 : p1);
-        if(other != null) {
-            model.addAttribute("otherName", other.getName());
-        }
-        try {
-            GameMessage end = new GameMessage();
-            end.setType("ROUND_END");
-            end.setRound(gameService.getCurrentRound()-1);
-            end.setAnswer(gameService.getAnswer());
-            end.setRoundSuccess(correct);
-
-            String json = new ObjectMapper().writeValueAsString(end);
-            gameSocketHandler.broadcast(json);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        // 게임이 끝났으면 finalResult로 보내도 됨
-        if (gameService.isGameOver()) {
-            return "finalResult";
-        }
-
-        return "midResult";    // templates/midResult.html
+        // 더 이상 정답 체크하지 않음
+        return "redirect:/game/guesser";  // 또는 "redirect:/"
     }
+
+    //기존 포스트맵핑 : => 웹소켓에서 처리하도록(주석처리 12.01)
+//    @PostMapping("/answer")
+//    public String submitAnswer(@RequestParam String answer, Model model, @RequestParam String userId) {
+//
+//        Player me = null;
+//        if (p1 !=null && userId != null && userId.equals(p1.getName())) {
+//            me = p1;
+//        }
+//        else if (p2 !=null && userId != null && userId.equals(p2.getName())) {
+//            me = p2;
+//        }
+//        if (me == null) {
+//            return "redirect:/";
+//        }
+//        boolean correct = gameService.checkAnswer(answer);
+//        boolean roundOver = gameService.isRoundOver(correct);
+//
+//        if (!roundOver) {
+//            // 라운드 안 끝났으면 다시 Guesser 화면
+//            addCommonAttributes(model, me);
+//            model.addAttribute("lastResult", correct);
+//            return "mainUI_Guesser";
+//        }
+////        if (!gameService.isGameOver()) {
+////            gameService.changeRoles(p1, p2);
+////        }
+//
+//
+//        boolean roundSuccess = gameService.getCurrentRoundScore() > 0;
+//
+//        model.addAttribute("round", gameService.getCurrentRound() - 1); // 방금 끝난 라운드
+//        model.addAttribute("roundSuccess", roundSuccess);
+//        model.addAttribute("roundScore", gameService.getCurrentRoundScore());
+//        model.addAttribute("totalScore", gameService.getScore());
+//        model.addAttribute("answerWord", gameService.getAnswer());
+//
+//        model.addAttribute("myName", me.getName());
+//        Player other = (me == p1 ? p2 : p1);
+//        if(other != null) {
+//            model.addAttribute("otherName", other.getName());
+//        }
+//        try {
+//            GameMessage end = new GameMessage();
+//            end.setType("ROUND_END");
+//            end.setRound(gameService.getCurrentRound()-1);
+//            end.setAnswer(gameService.getAnswer());
+//            end.setRoundSuccess(correct);
+//
+//            String json = new ObjectMapper().writeValueAsString(end);
+//            gameSocketHandler.broadcast(json);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        // 게임이 끝났으면 finalResult로 보내도 됨
+//        if (gameService.isGameOver()) {
+//            return "finalResult";
+//        }
+//
+//        return "midResult";    // templates/midResult.html
+//    }
 
     //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET
     @GetMapping("/answer")
