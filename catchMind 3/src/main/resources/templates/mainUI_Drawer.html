@@ -37,7 +37,20 @@
             <!-- Guesser와 공유할 정답 결과 영역 -->
             <section class="border bg-white p-3">
                 <h2 class="h6 mb-2">정답 결과</h2>
-                <div id="guess-result"></div>
+                <div id="guess-result">
+                    <p th:if="${lastResult != null}">
+            <span th:text="${lastResult} ? '정답입니다!' : '틀렸습니다. 다시 시도해보세요!'">
+                정답입니다!
+            </span>
+                        <!-- 남은 기회도 함께 표시 -->
+                        <span th:if="${triesLeft != null}">
+                (
+                남은 기회:
+                <span th:text="${triesLeft}">5</span>번
+                )
+            </span>
+                    </p>
+                </div>
             </section>
 
         </aside>

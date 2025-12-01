@@ -171,6 +171,16 @@ public class GameController {
         boolean correct = gameService.checkAnswer(answer);
         boolean roundOver = gameService.isRoundOver(correct);
 
+        try {
+            int currentRoundForMsg = gameService.getCurrentRound();
+            if(roundOver) {
+                currentRoundForMsg -= 1;
+            }
+            gameSocketHandler.sendGuessResult(correct, gameService.getTriesLeft(), gameService.getScore(),gameService.getCurrentRoundScore(), currentRoundForMsg);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         if (!roundOver) {
             // 라운드 안 끝났으면 다시 Guesser 화면
             addCommonAttributes(model, me);

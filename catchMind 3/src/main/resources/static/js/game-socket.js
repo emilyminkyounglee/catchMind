@@ -173,6 +173,33 @@
 //  // ===============================
   const guessForm = document.getElementById("guess-form");
   const answerInput = document.getElementById("answer-input");
+   if (guessForm && answerInput) {
+      guessForm.addEventListener("submit", (e) => {
+        e.preventDefault(); // ★ 여기서 페이지 이동 막기
+
+        const value = answerInput.value.trim();
+        if (!value) return;
+
+        const formData = new FormData(guessForm);
+        // answer, userId 둘 다 form 안에 있으니까 그대로 전송
+        fetch(guessForm.action, {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => {
+            // 굳이 응답 HTML 안 써도 됨
+            // round가 끝나면 서버에서 ROUND_END 메시지 보내고,
+            // game-socket.js의 handleRoundEnd가 /game/answer 로 이동시켜 줌
+          })
+          .catch((err) => {
+            console.error("submit error", err);
+          });
+
+        // 입력창은 비우고 다시 포커스
+        answerInput.value = "";
+        answerInput.focus();
+      });
+    }
 //
 //  if (guessForm && answerInput) {
 //    guessForm.addEventListener("submit", (e) => {
@@ -196,20 +223,20 @@
   // ===============================
 
   // 네잎클로버 아이콘 렌더링
-//  function renderAttempts(triesLeft) {
-//    const container = document.getElementById("attempt-icons");
-//    if (!container) return;
-//
-//    container.innerHTML = "";
-//    for (let i = 0; i < triesLeft; i++) {
-//      const img = document.createElement("img");
-//      img.src = "/image/clover_icon.png"; // 정적 경로 확인 필요
-//      img.alt = "Attempt";
-//      img.style.height = "18px";
-//      img.style.margin = "0 2px";
-//      container.appendChild(img);
-//    }
-//  }
+  function renderAttempts(triesLeft) {
+    const container = document.getElementById("attempt-icons");
+    if (!container) return;
+
+    container.innerHTML = "";
+    for (let i = 0; i < triesLeft; i++) {
+      const img = document.createElement("img");
+      img.src = "/image/clover_icon.png"; // 정적 경로 확인 필요
+      img.alt = "Attempt";
+      img.style.height = "18px";
+      img.style.margin = "0 2px";
+      container.appendChild(img);
+    }
+  }
 //
 //  function handleGuessResult(msg) {
 //    const resultDiv = document.getElementById("guess-result");
@@ -296,6 +323,58 @@
 //    }
 //  }
 //
+  // ===============================
+  // 5. 라운드/점수/타이머 & 결과 UI
+  // ===============================
+
+  /**
+   * GUESS_RESULT 메시지 처리
+   * - Drawer/Guesser 둘 다 이걸 받아서 "정답/오답" 메시지를 공유해서 볼 수 있게 함
+   */
+      /**
+       * GUESS_RESULT 메시지 처리
+       * - Drawer/Guesser 둘 다 이걸 받아서 "정답/오답" + 시도횟수/점수/라운드 공유
+       */
+      function handleGuessResult(msg) {
+        const box = document.getElementById("guess-result");
+        if (box) {
+          if (msg.correct) {
+            box.textContent = `정답입니다! (이번 라운드 점수: ${msg.roundScore}, 총점: ${msg.totalScore})`;
+            box.className = "mt-2 fw-semibold text-success";
+          } else {
+            if (typeof msg.triesLeft === "number") {
+              box.textContent = `틀렸습니다. 다시 시도해보세요! ( 남은 기회: ${msg.triesLeft}번 )`;
+            } else {
+              box.textContent = "틀렸습니다. 다시 시도해보세요!";
+            }
+            box.className = "mt-2 fw-semibold text-danger";
+          }
+        }
+
+        // ---- 여기서부터 공통 UI 동기화 ----
+
+        // Attempts(네잎클로버)
+        if (typeof msg.triesLeft === "number") {
+          renderAttempts(msg.triesLeft);
+        }
+
+        // Score
+        if (typeof msg.totalScore === "number") {
+          const scoreSpan = document.getElementById("score");
+          if (scoreSpan) {
+            scoreSpan.textContent = msg.totalScore;
+          }
+        }
+
+        // Round
+        if (typeof msg.round === "number") {
+          const roundSpan = document.getElementById("round-info");
+          if (roundSpan) {
+            roundSpan.textContent = msg.round + " / 6";
+          }
+        }
+      }
+
   function handleRoundEnd(msg) {
 //    const form = document.createElement("form");
 //    form.method = "post";
@@ -337,6 +416,11 @@
       case "DRAW":
         handleDraw(msg);
         break;
+
+      case "GUESS_RESULT":
+        handleGuessResult(msg);
+        break;
+
 //
 //      case "GUESS_RESULT":
 //        handleGuessResult(msg);

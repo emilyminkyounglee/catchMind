@@ -202,4 +202,20 @@ public class GameSocketHandler extends TextWebSocketHandler {
 //            }
 //        }
 //    }
+    public void sendGuessResult(boolean correct, int triesLeft, int totalScore, int roundScore, int currentRound) {
+        try {
+            GameMessage msg = new GameMessage();
+            msg.setType("GUESS_RESULT");
+            msg.setCorrect(correct);
+            msg.setTriesLeft(triesLeft);
+            msg.setTotalScore(totalScore);
+            msg.setRoundScore(roundScore);
+            msg.setRound(currentRound);
+
+            String json = objectMapper.writeValueAsString(msg);
+            broadcast(json);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
