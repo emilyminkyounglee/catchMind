@@ -1,6 +1,7 @@
 package kr.ac.ewha.catchMind.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import kr.ac.ewha.catchMind.model.GameHistory;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GameService {
+    private static final int MAX_ROUNDS = 6;
     //Controller에서 게임 새로 시작할때 resetGame 부르고 시작
     private int tries = 5;
     private int rounds = 1;
@@ -24,6 +26,8 @@ public class GameService {
     private int score = 0;
     private int roundScore = 0;
     private static final long ROUND_LIMIT_MS = 90_000;
+    private final char[] roundResult = new char[MAX_ROUNDS];
+    private final int[] roundScores = new int[MAX_ROUNDS];
     private final PlayerRepository playerRepository;
     private final WordDictionaryRepository wordDictionaryRepository;
     private final GameHistoryRepository gameHistoryRepository;
@@ -48,16 +52,21 @@ public class GameService {
     public boolean isRoundOver(boolean correct)//현재 라운드가 종료되었는지 확인 + 여기서 점수계산 로직
     {
         boolean isOver = false;
+        int idx = rounds - 1;
 
         if (correct) {
             roundScore = tries;
             score += tries;
+            roundResult[idx] = 'O';
+            roundScores[idx] = roundScore;
             tries = 5;
             rounds++;
             isOver = true;
         }
         else if (tries < 1 || isTimeOver()) {
             roundScore = 0;
+            roundResult[idx] = 'X';
+            roundScores[idx] = 0;
             tries = 5;
             rounds++;
             isOver = true;
@@ -109,6 +118,9 @@ public class GameService {
         tries = 5;
         rounds = 1;
         score = 0;
+        roundScore = 0;
+        Arrays.fill(roundResult, '-');
+        Arrays.fill(roundScores, 0);
     }
     public void newRound() // 새 라운드 시작할때 (얘도 무조건 처음에 부르기)
     {
@@ -211,6 +223,9 @@ public class GameService {
         return this.answer;
     }
 
+    public void saveGameHistory(Player p) {
+        saveGameHistory(p, roundResult, roundScores, score);
+    }
 
     public void saveGameHistory(Player p, char[] roundResult, int[] roundScore, int totalScore) {
         GameHistory history = new GameHistory();

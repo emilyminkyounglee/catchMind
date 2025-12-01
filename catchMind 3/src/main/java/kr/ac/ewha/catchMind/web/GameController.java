@@ -42,11 +42,7 @@ public class GameController {
         p2 = gameService.loadPlayer(userId);
 
         gameService.setRoleRandomly(p1, p2);
-//        p1.setRole(Role.DRAWER);
-//        p2.setRole(Role.GUESSER);
-
         gameService.setupNewGame(p1, p2);
-
         gameService.newRound();
 
         String answerWord = gameService.getWordForDrawer();
@@ -55,7 +51,7 @@ public class GameController {
         // 새로 수정한 부분!
         if (p1.getRole() == Role.DRAWER) {
             addCommonAttributes(model);
-            model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
+            model.addAttribute("wordForDrawer", answerWord);
             return "mainUI_Drawer";
 
         } else {
@@ -72,7 +68,7 @@ public class GameController {
     @GetMapping("/guesser")
     public String showGuesser(Model model) {
         // 게임 시작 전에 접근하면 홈으로 보내기
-        if (p1.getName() == null || p1.getRole() == null ||
+        if (p1 == null || p2 == null || p1.getName() == null || p1.getRole() == null ||
                 p2.getName() == null || p2.getRole() == null) {
             return "redirect:/";
         }
@@ -102,7 +98,7 @@ public class GameController {
         model.addAttribute("roundSuccess", roundSuccess);
         model.addAttribute("roundScore", gameService.getCurrentRoundScore());
         model.addAttribute("totalScore", gameService.getScore());
-        model.addAttribute("answerWord", gameService.getWordForDrawer());
+        model.addAttribute("answerWord", gameService.getAnswer());
 
         // 게임이 끝났으면 finalResult로 보내도 됨
         if (gameService.isGameOver()) {
@@ -115,6 +111,8 @@ public class GameController {
     public String nextRound(Model model) {
 
         if (gameService.isGameOver()) {
+            gameService.saveGameHistory(p1);
+            gameService.saveGameHistory(p2);
             gameService.saveGameData(p1);
             gameService.saveGameData(p2);
             model.addAttribute("totalScore", gameService.getScore());
@@ -131,7 +129,7 @@ public class GameController {
 
         if (p1.getRole() == Role.DRAWER) {
             addCommonAttributes(model);
-            model.addAttribute("wordForDrawer", gameService.getWordForDrawer());
+            model.addAttribute("wordForDrawer", answerWord);
             return "mainUI_Drawer";
         } else {
             return "redirect:/game/guesser";
@@ -145,7 +143,7 @@ public class GameController {
         model.addAttribute("player", p);
         model.addAttribute("totalScore", p.getTotalScore());
         model.addAttribute("gamesPlayed", p.getGamesPlayed());
-        model.addAttribute("history", p.getGameHistory());
+        model.addAttribute("histories", p.getGameHistory());
         return "myPage";
     }
 
