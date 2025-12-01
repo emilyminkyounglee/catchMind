@@ -46,12 +46,7 @@ public class GameService {
 
     public boolean isGameOver() // 현재 게임이 종료되었는지 확인 aka 6라운드까지 진행 완료 했는지
     {
-        boolean isOver = false;
-        if (rounds > 6)
-        {
-            isOver = true;
-        }
-        return isOver;
+        return rounds > MAX_ROUNDS;
     }
     public boolean isRoundOver(boolean correct)//현재 라운드가 종료되었는지 확인 + 여기서 점수계산 로직
     {
@@ -233,6 +228,7 @@ public class GameService {
 
     @Transactional
     public void saveGameHistory(Player p) {
+        System.out.println("[LOG] save game history 호출 " + p.getName() + ", total score: " + score );
         saveGameHistory(p, roundResult, roundScores, score);
     }
 

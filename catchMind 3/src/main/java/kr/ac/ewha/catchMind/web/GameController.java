@@ -202,6 +202,15 @@ public class GameController {
         }
         // 게임이 끝났으면 finalResult로 보내도 됨
         if (gameService.isGameOver()) {
+            System.out.println("[LOG] game over! saving game history");
+            if (p1 != null) {
+                gameService.saveGameHistory(p1);
+                gameService.saveGameData(p1);
+            }
+            if (p2 != null) {
+                gameService.saveGameHistory(p2);
+                gameService.saveGameData(p2);
+            }
             return "finalResult";
         }
 
@@ -235,11 +244,11 @@ public class GameController {
         }
         // 1) 게임이 이미 끝났으면 저장 후 최종 결과
         if (gameService.isGameOver()) {
-            gameService.saveGameHistory(p1);
-            gameService.saveGameHistory(p2);
-            gameService.saveGameData(p1);
-            gameService.saveGameData(p2);
-            model.addAttribute("totalScore", gameService.getScore());
+//            gameService.saveGameHistory(p1);
+//            gameService.saveGameHistory(p2);
+//            gameService.saveGameData(p1);
+//            gameService.saveGameData(p2);
+//            model.addAttribute("totalScore", gameService.getScore());
             return "finalResult";
         }
 
