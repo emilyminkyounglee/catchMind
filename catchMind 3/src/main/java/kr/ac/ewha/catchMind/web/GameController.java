@@ -96,6 +96,7 @@ public class GameController {
             me = p2;
             gameService.setRoleRandomly(p1, p2);
             gameService.setupNewGame(p1, p2);
+            gameService.startNewGameId();
             gameService.newRound();
 
             String answerWord = gameService.getWordForDrawer();

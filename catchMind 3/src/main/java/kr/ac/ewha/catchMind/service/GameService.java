@@ -33,6 +33,8 @@ public class GameService {
     private final WordDictionaryRepository wordDictionaryRepository;
     private final GameHistoryRepository gameHistoryRepository;
 
+    private String gameId;
+
     private boolean needInitNextRound = false;
 
 
@@ -229,13 +231,14 @@ public class GameService {
     @Transactional
     public void saveGameHistory(Player p) {
         System.out.println("[LOG] save game history 호출 " + p.getName() + ", total score: " + score );
-        saveGameHistory(p, roundResult, roundScores, score);
+        saveGameHistory(p, roundResult, roundScores, score, this.gameId);
     }
 
     @Transactional
-    public void saveGameHistory(Player p, char[] roundResult, int[] roundScore, int totalScore) {
+    public void saveGameHistory(Player p, char[] roundResult, int[] roundScore, int totalScore, String gameId) {
         GameHistory history = new GameHistory();
         history.setPlayer(p);
+        history.setGameId(gameId);
 
         history.setRound1Result(roundResult[0]);
         history.setRound1Score(roundScore[0]);
@@ -275,5 +278,11 @@ public class GameService {
         String answerWord = getWordForDrawer();
         setAnswer(answerWord);
         needInitNextRound = false;
+    }
+    public void startNewGameId() {
+        this.gameId = java.util.UUID.randomUUID().toString();
+    }
+    public String getGameId() {
+        return this.gameId;
     }
 }
