@@ -257,4 +257,14 @@ public class GameService {
             p2.setRole(Role.DRAWER);
         }
     }
+
+    // 라운드 제한 시간 (초)
+    public long getRoundLimitSeconds() {
+        return ROUND_LIMIT_MS / 1000;
+    }
+
+    // 서버 시작 시점 (초 단위 Epoch Time)
+    public long getServerStartTimeSeconds() {
+        return time / 1000;
+    }
 }

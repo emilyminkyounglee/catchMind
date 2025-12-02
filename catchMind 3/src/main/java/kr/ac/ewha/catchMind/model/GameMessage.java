@@ -35,6 +35,10 @@ public class GameMessage {
 
     private String text;        // 안내 메시지
 
+    // 타이머 정보
+    private Long limitSeconds;
+    private Long serverStartTime;
+
     // 기본 생성자
     public GameMessage() {}
 
@@ -199,4 +203,11 @@ public class GameMessage {
         this.text = text;
     }
 
+    public Long getLimitSeconds() { return limitSeconds; }
+
+    public void setLimitSeconds(Long limitSeconds) { this.limitSeconds = limitSeconds; }
+
+    public Long getServerStartTime() { return serverStartTime; }
+
+    public void setServerStartTime(Long serverStartTime) { this.serverStartTime = serverStartTime; }
 }

@@ -236,62 +236,44 @@
     }
   }
 
-  /*let timerInterval = null;
-
-  function startTimer(limitSeconds, serverStartTime) {
-    if (timerInterval) clearInterval(timerInterval);
-
-    timerInterval = setInterval(() => {
-      const nowSec = Date.now() / 1000;
-      const elapsed = nowSec - serverStartTime;
-      const remain = Math.max(0, limitSeconds - elapsed);
-
-      const min = Math.floor(remain / 60);
-      const sec = Math.floor(remain % 60);
-
-      const display = document.getElementById("timer-display");
-      if (display) {
-        display.textContent =
-          String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
-      }
-
-      if (remain <= 0) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-    }, 250);
-  }*/
-
-    // ===============================
-    // [수정] 단순 타이머 로직 (90초 카운트다운 + TIME_OVER 전송)
-    // ===============================
+    /*
+    * 서버 기반 타이머: 서버에서 시작 시점과 제한 시간을 받아 클라이언트에서 남은 시간을 계산하여 표시
+    * limitSeconds: 라운드 제한 시간 (예: 90)
+    * serverStartTime: 라운드가 서버에서 시작된 시점 (Epoch Time, 초 단위)
+    */
     let timerInterval = null;
 
-    function startSimpleTimer() {
-      let timeLeft = 90; // 1분 30초
-      const timerElement = document.getElementById("timer-display"); // HTML에서 id="timer"인 태그 찾기
-
+    function startTimer(limitSeconds, serverStartTime) {
       if (timerInterval) clearInterval(timerInterval);
 
-      // 즉시 화면 한번 갱신
-      updateTimerDisplay(timerElement, timeLeft);
+      const display = document.getElementById("timer-display");
+      if (!display) return;
 
       timerInterval = setInterval(() => {
-        timeLeft--;
+        // 현재 시간 (초)
+        const nowSec = Date.now() / 1000;
 
-        updateTimerDisplay(timerElement, timeLeft);
+        // 경과 시간
+        const elapsed = nowSec - serverStartTime;
 
-        // 0초가 되면 서버로 신호 보내기
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval); // 타이머 멈춤
+        // 남은 시간 계산 (0초 미만으로 내려가지 않도록)
+        const remain = Math.max(0, limitSeconds - elapsed);
 
-          // 소켓이 연결되어 있으면 TIME_OVER 전송
-          if (socket.readyState === WebSocket.OPEN) {
-            console.log("[Timer] 시간 종료! 서버로 TIME_OVER 전송");
-            send({ type: "TIME_OVER" });
-          }
+        const min = Math.floor(remain / 60);
+        const sec = Math.floor(remain % 60);
+
+        // 화면 업데이트
+        display.textContent =
+          String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+
+        // 남은 시간이 0초 이하가 되면 타이머 멈춤
+        if (remain <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+
+          log("타이머 종료. 서버 응답 대기 중.");
         }
-      }, 1000);
+      }, 250); // 250ms 마다 갱신하여 부드럽게 보이도록
     }
 
     // 화면에 분:초 (01:30) 형태로 찍어주는 도우미 함수
@@ -307,11 +289,6 @@
 
       element.textContent = min + ":" + sec;
     }
-
-    // 페이지 로드 되자마자 타이머 시작!
-    startSimpleTimer();
-
-    // 여기까지 타이머 추가!
 
 //  function handleRoundStart(msg) {
 //    const roundSpan = document.getElementById("round-info");
@@ -374,10 +351,12 @@
       clearCanvas();
       hasPrevPoint = false;
 
-      // [수정] startTimer(...) 호출하는 코드 삭제함!
-      // 페이지 로드 시 startSimpleTimer()가 이미 실행되고 있으므로 여기서 또 부를 필요 없음.
-      // 만약 강제로 다시 시작하고 싶다면 startSimpleTimer(); 를 호출하면 됨.
-      startSimpleTimer();
+      if (
+        typeof msg.limitSeconds === "number" &&
+        typeof msg.serverStartTime === "number"
+      ) {
+        startTimer(msg.limitSeconds, msg.serverStartTime);
+        }
     }
     // 여기까지
 

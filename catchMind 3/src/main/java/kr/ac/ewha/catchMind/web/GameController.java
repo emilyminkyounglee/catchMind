@@ -5,6 +5,7 @@ import kr.ac.ewha.catchMind.model.Player;
 import kr.ac.ewha.catchMind.model.Role;
 import kr.ac.ewha.catchMind.service.GameService;
 import org.springframework.stereotype.Controller;
+import kr.ac.ewha.catchMind.handler.GameSocketHandler;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,12 +16,14 @@ import java.util.List;
 @RequestMapping("/game")
 public class GameController {
     private final GameService gameService;
+    private final GameSocketHandler gameSocketHandler;
 
     private Player p1;
     private Player p2;
 
-    public GameController(GameService gameService) {
+    public GameController(GameService gameService, GameSocketHandler gameSocketHandler) {
         this.gameService = gameService;
+        this.gameSocketHandler = gameSocketHandler;
     }
 
     //공통으로 Model에 등록시킬 값들을 메서드로 처리
@@ -47,6 +50,12 @@ public class GameController {
 
         String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
+
+        try {
+            gameSocketHandler.sendRoundStartMessage(p1, p2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // 새로 수정한 부분!
         if (p1.getRole() == Role.DRAWER) {
@@ -126,6 +135,11 @@ public class GameController {
         String answerWord = gameService.getWordForDrawer();
         gameService.setAnswer(answerWord);
 
+        try {
+            gameSocketHandler.sendRoundStartMessage(p1, p2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         if (p1.getRole() == Role.DRAWER) {
             addCommonAttributes(model);

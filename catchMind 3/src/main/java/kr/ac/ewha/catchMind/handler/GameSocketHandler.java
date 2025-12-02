@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -12,8 +13,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import kr.ac.ewha.catchMind.model.Player;
 import kr.ac.ewha.catchMind.model.GameMessage;
 import kr.ac.ewha.catchMind.service.GameService;
+import kr.ac.ewha.catchMind.handler.GameSocketHandler;
 
 @Component
 public class GameSocketHandler extends TextWebSocketHandler {
@@ -36,6 +39,27 @@ public class GameSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
         System.out.println("새 플레이어 접속: " + session.getId());
+    }
+
+    // GameController에서 호출하여 라운드 시작 정보를 전송하는 메서드 (추가)
+    public void sendRoundStartMessage(Player p1, Player p2) throws Exception {
+        GameMessage startMsg = new GameMessage();
+        startMsg.setType("ROUND_START");
+
+        // [핵심] 타이머 동기화에 필요한 서버 시간 정보 포함 (초 단위)
+        startMsg.setLimitSeconds(gameService.getRoundLimitSeconds());
+        startMsg.setServerStartTime(gameService.getServerStartTimeSeconds());
+
+        // 기타 라운드 정보
+        startMsg.setRound(gameService.getCurrentRound());
+        startMsg.setTotalScore(gameService.getScore());
+        startMsg.setTriesLeft(gameService.getTriesLeft());
+
+        // 누가 DRAWER/GUESSER인지 UI 동기화를 위해 전송
+        startMsg.setDrawerName(gameService.getDrawerName(p1, p2));
+        startMsg.setGuesserName(gameService.getGuesserName(p1, p2));
+
+        broadcast(objectMapper.writeValueAsString(startMsg));
     }
 
     // 메시지 수신 시
