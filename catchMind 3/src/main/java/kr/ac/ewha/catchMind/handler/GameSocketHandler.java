@@ -100,7 +100,9 @@ public class GameSocketHandler extends TextWebSocketHandler {
             case "DRAW":
                 handleDraw(session, gameMsg);
                 break;
-
+            case "GAME_START":
+                handleGameStart(session, gameMsg);
+                break;
             default:
                 System.out.println(type + ": 제대로 된 형식이 아닙니다.");
         }
@@ -190,5 +192,18 @@ public class GameSocketHandler extends TextWebSocketHandler {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    private void handleGameStart(WebSocketSession session, GameMessage msg) throws IOException {
+        String roomId = sessionRoomMap.get(session);
+        if (roomId == null) {
+            System.out.println("roomId 없는 세션에서 GAME_START, 무시");
+            return;
+        }
+
+        msg.setRoomId(roomId);
+        msg.setType("GAME_START");
+
+        String json = objectMapper.writeValueAsString(msg);
+        broadcastToRoom(roomId, json);
     }
 }
