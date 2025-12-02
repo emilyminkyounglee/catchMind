@@ -51,76 +51,6 @@ public class GameController {
         model.addAttribute("roomId", roomId);
     }
 
-//    @PostMapping("/start")
-//    public String startGame(@RequestParam String userId, HttpSession session, Model model) {
-//
-//        // 이 세션의 유저 ID를 저장해두기 (나중에 next-round에서 사용)
-//        session.setAttribute("userId", userId);
-//
-//        if ("wkvmtlf2MEJ".equals(userId)) {
-//            return  "redirect:/admin/words";
-//        }
-//
-//        // 현재 구조: p1, p2 둘 다 같은 userId 로딩
-//        // 나중에 진짜 2인 구조로 바꾸려면 여기 로직을
-//        // "첫 번째 접속자는 p1, 두 번째 접속자는 p2" 식으로 분리해야 함
-////        p1 = gameService.loadPlayer(userId);
-////        p2 = gameService.loadPlayer(userId);
-////
-////        gameService.setRoleRandomly(p1, p2);
-////        gameService.setupNewGame(p1, p2);
-////        gameService.newRound();
-////
-////        String answerWord = gameService.getWordForDrawer();
-////        gameService.setAnswer(answerWord);
-////
-////        // 요청 보낸 나(me)를 p1/p2 중에서 찾기
-////        Player me = p1;
-////        if (p2 != null && userId.equals(p2.getName())) {
-////            me = p2;
-////        }
-//        if(gameService.isGameOver()) {
-//            System.out.println("[LOG] reset game");
-//            p1 = null;
-//            p2 = null;
-//            gameService.setupNewGame(null, null);
-//        }
-//        Player me;
-//        if (p1 == null) {
-//            p1 = gameService.loadPlayer(userId);
-//            me = p1;
-//        } else if (p2 == null && !p1.getName().equals(userId)) {
-//            p2 = gameService.loadPlayer(userId);
-//            me = p2;
-//            gameService.setRoleRandomly(p1, p2);
-//            gameService.setupNewGame(p1, p2);
-//            gameService.startNewGameId();
-//            gameService.newRound();
-//
-//            String answerWord = gameService.getWordForDrawer();
-//            gameService.setAnswer(answerWord);
-//        }
-//        else {
-//            if(p1 != null && p1.getName().equals(userId)) {
-//                me = p1;
-//            } else if (p2 != null && p2.getName().equals(userId)) {
-//                me = p2;
-//            }
-//            else {
-//                return  "redirect:/";
-//            }
-//        }
-//
-//        addCommonAttributes(model, me);
-//
-//        if (me.getRole() == Role.DRAWER) {
-//            model.addAttribute("wordForDrawer", gameService.getAnswer());
-//            return "mainUI_Drawer";
-//        } else {
-//            // redirect 말고 바로 Guesser 템플릿을 리턴해도 됨
-//            return "mainUI_Guesser";
-//        }
-//    }
     @PostMapping("/start")
     public String start(@RequestParam int capacity,@RequestParam String userId, HttpSession session, Model model) {
         if("wkvmtlf2MEJ".equals(userId)){
@@ -329,58 +259,16 @@ public class GameController {
         }
         // 1) 게임이 이미 끝났으면 저장 후 최종 결과
         if (gameService.isGameOver()) {
-//            gameService.saveGameHistory(p1);
-//            gameService.saveGameHistory(p2);
-//            gameService.saveGameData(p1);
-//            gameService.saveGameData(p2);
-//            model.addAttribute("totalScore", gameService.getScore());
             return "finalResult";
         }
 
-        // 2) 두 플레이어 역할 교대 (DRAWER ↔ GUESSER)
-        //gameService.changeRoles(p1, p2);
 
-        // 3) 새 라운드 세팅 (tries 초기화, 타이머 리셋)
-//        gameService.newRound();
-//        List<Player> players = room.getPlayerList();
-        //gameService.prepareNextRound(p1, p2);
-        //String userId = session.getAttribute("userId").toString();
-//        Player me = null;
-//        if (p1 != null && userId != null && userId.equals(p1.getName())) {
-//            me = p1;
-//        }  else if (p2 != null && userId != null && userId.equals(p2.getName())) {
-//            me = p2;
-//        }
         List<Player> players = room.getPlayerList();
         gameService.prepareNextRound(players);
         Player me = room.findPlayerByName(userId);
         if (me == null) {
             return "redirect:/";
         }
-//        if (userId != null) {
-//            if(p1 != null && p1.getName().equals(userId)) {
-//                me = p1;
-//            }
-//            else if(p2 != null && p2.getName().equals(userId)) {
-//                me = p2;
-//            }
-//        }
-        // 5) 이 요청을 보낸 세션의 userId
-
-//        if (p1 != null && userId != null && userId.equals(p1.getName())) {
-//            me = p1;
-//        } else if (p2 != null && userId != null && userId.equals(p2.getName())) {
-//            me = p2;
-//        }
-//        if (me == null) {
-//            return "redirect:/";
-//        }
-
-//
-//        if (me == null) {
-//            // 비정상 접근이면 그냥 홈으로
-//            return "redirect:/";
-//        }
 
         addCommonAttributes(model, me, roomId);
 

@@ -132,26 +132,7 @@ public class GameService {
         tries = 5;
         time = System.currentTimeMillis();
     }
-//    public void setPlayerInfo(Player player, int i, String name)
-//    {
-//
-//        player.setName(name);
-//        if  (i%2 == 0)
-//        {
-//            player.setRole(Role.DRAWER);
-//        }
-//        else
-//        {
-//            player.setRole(Role.GUESSER);
-//        }
-//    }
-//    public void changeRoles(Player p1, Player p2) //역할 바꿔주기
-//    {
-//        Role p2Role = p1.getRole();
-//        Role p1Role = p2.getRole();
-//        p1.setRole(p1Role);
-//        p2.setRole(p2Role);
-//    }
+
 
     public int getScore()
     {
@@ -173,25 +154,7 @@ public class GameService {
         }
         return wordDictionary.getWord();
     }
-//    public String getDrawerName(Player p1, Player p2) {
-//        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.DRAWER)) {
-//            return p1.getName();
-//        }
-//        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.DRAWER)) {
-//            return p2.getName();
-//        }
-//        return "Drawer"; // 기본값
-//    }
-//
-//    public String getGuesserName(Player p1, Player p2) {
-//        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.GUESSER)) {
-//            return p1.getName();
-//        }
-//        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.GUESSER)) {
-//            return p2.getName();
-//        }
-//        return "Guesser"; // 기본값
-//    }
+
     public String getDrawerName(List<Player> players) {
         Player drawer = findDrawer(players);
         return drawer != null ? drawer.getName() : "Drawer";
