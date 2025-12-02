@@ -33,7 +33,7 @@ public class GameController {
 
     //공통으로 Model에 등록시킬 값들을 메서드로 처리
     private void addCommonAttributes(Model model, GameRoom room, Player me) {
-        GameState gameState = new GameState();
+        GameState gameState = room.getGameState();
         model.addAttribute("round", gameState.getRound());
         model.addAttribute("triesLeft", gameState.getTries());
         model.addAttribute("totalScore", gameState.getTotalScore());
@@ -63,6 +63,15 @@ public class GameController {
         model.addAttribute("players", room.getPlayerList());
         model.addAttribute("capacity", room.getCapacity());
         return "waitingRoom";
+    }
+    @GetMapping("/start")
+    public String redirectStartGet() {
+        return "redirect:/";   // 실수로 GET으로 들어오면 홈으로 돌려보냄
+    }
+
+    @GetMapping("/begin")
+    public String redirectBeginGet() {
+        return "redirect:/";
     }
     @PostMapping("/begin")
     public String begin(@RequestParam String roomId,@RequestParam String userId, HttpSession session, Model model) {
