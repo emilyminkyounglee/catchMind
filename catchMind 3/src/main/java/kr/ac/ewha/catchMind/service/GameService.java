@@ -4,41 +4,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import kr.ac.ewha.catchMind.model.GameHistory;
-import kr.ac.ewha.catchMind.model.WordDictionary;
+import kr.ac.ewha.catchMind.model.*;
 import kr.ac.ewha.catchMind.repository.GameHistoryRepository;
 import kr.ac.ewha.catchMind.repository.PlayerRepository;
 import kr.ac.ewha.catchMind.repository.WordDictionaryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import kr.ac.ewha.catchMind.model.Player;
-import kr.ac.ewha.catchMind.model.Role;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GameService {
     private static final int MAX_ROUNDS = 6;
     //Controller에서 게임 새로 시작할때 resetGame 부르고 시작
-    private int tries = 5;
-    private int rounds = 1;
-    private long time;
-    private String answer;
-    private int score = 0;
-    private int roundScore = 0;
-    private static final long ROUND_LIMIT_MS = 90_000;
-    private final char[] roundResult = new char[MAX_ROUNDS];
-    private final int[] roundScores = new int[MAX_ROUNDS];
     private final PlayerRepository playerRepository;
     private final WordDictionaryRepository wordDictionaryRepository;
     private final GameHistoryRepository gameHistoryRepository;
-
-    private String gameId;
-
-    private boolean needInitNextRound = false;
-
-
-
 
     public GameService(PlayerRepository playerRepository, WordDictionaryRepository wordDictionaryRepository, GameHistoryRepository gameHistoryRepository) {
         this.playerRepository = playerRepository;
@@ -46,106 +27,61 @@ public class GameService {
         this.gameHistoryRepository = gameHistoryRepository;
     }
 
-    public boolean isGameOver() // 현재 게임이 종료되었는지 확인 aka 6라운드까지 진행 완료 했는지
+    public boolean isGameOver(GameRoom room) // 현재 게임이 종료되었는지 확인 aka 6라운드까지 진행 완료 했는지
     {
-        return rounds > MAX_ROUNDS;
+        return room.getGameState().isGameOver();
     }
-    public boolean isRoundOver(boolean correct)//현재 라운드가 종료되었는지 확인 + 여기서 점수계산 로직
+
+    public boolean checkAnswer(GameRoom room, String guess)//정답 체크
     {
-        boolean isOver = false;
-        int idx = rounds - 1;
-
-        if (correct) {
-            roundScore = tries;
-            score += tries;
-            roundResult[idx] = 'O';
-            roundScores[idx] = roundScore;
-            tries = 5;
-            rounds++;
-            isOver = true;
-        }
-        else if (tries < 1 || isTimeOver()) {
-            roundScore = 0;
-            roundResult[idx] = 'X';
-            roundScores[idx] = 0;
-            tries = 5;
-            rounds++;
-            isOver = true;
-        }
-        if (isOver) {
-            needInitNextRound = true;
-        }
-        return isOver;
-    }
-    public boolean isTimeOver() { // 시간 체크 (1분 30초짜리 게임으로
-        long now = System.currentTimeMillis();
-        return now - time >= ROUND_LIMIT_MS;
-    }
-    public int minuteLeft() { // 남은 분
-        long now = System.currentTimeMillis();
-        long remain = ROUND_LIMIT_MS - (now - time);
-
-        if (remain < 0) remain = 0;
-
-        return (int)(remain / 1000) / 60;
-    }
-
-    public int secondsLeft() { // 남은 초
-        long now = System.currentTimeMillis();
-        long remain = ROUND_LIMIT_MS - (now - time);
-
-        if (remain < 0) remain = 0;
-
-        return (int)(remain / 1000) % 60;
-    }
-    public boolean checkAnswer(String guess)//정답 체크
-    {
-        if (answer != null && guess.equals(answer))
+        GameState gameState = room.getGameState();
+        String answer = gameState.getAnswer();
+        if (answer != null && answer.equals(guess))
         {
             return true;
         }
         else {
-            tries--;
+            gameState.decreaseTries();
             return false;
         }
     }
-    public int getTriesLeft() // 정답 시도 기회 알려줌
+
+    public boolean isRoundOver(GameRoom room, boolean correct)
     {
-        return tries;
+        return room.getGameState().checkRoundOver(correct);
     }
-    public int getCurrentRound() // 현재 라운드 몇번째인지 알려줌
+    public int getTriesLeft(GameRoom room)
     {
-        return rounds;
+        return room.getGameState().getTries();
     }
-    public void setupNewGame(Player p1, Player p2)//게임을 총체적으로 다시 실행해볼때
+    public int getCurrentRound(GameRoom room)
     {
-        tries = 5;
-        rounds = 1;
-        score = 0;
-        roundScore = 0;
-        Arrays.fill(roundResult, '-');
-        Arrays.fill(roundScores, 0);
-        needInitNextRound = false;
+        return room.getGameState().getRound();
     }
-    public void newRound() // 새 라운드 시작할때 (얘도 무조건 처음에 부르기)
+    public int getScore(GameRoom room)
     {
-        tries = 5;
-        time = System.currentTimeMillis();
+        return room.getGameState().getTotalScore();
+    }
+    public void setupNewGame(GameRoom room)
+    {
+        room.getGameState().resetState();
+    }
+    public void setAnswer(GameRoom room, String answer)
+    {
+        room.getGameState().assignAnswer(answer);
+    }
+    public String getAnswer(GameRoom room)
+    {
+        return room.getGameState().getAnswer();
+    }
+    public void startNewGameId(GameRoom room) {
+        room.getGameState().initNewGameId();
     }
 
+    public String getGameId(GameRoom room) {
+        return room.getGameState().getGameId();
+    }
 
-    public int getScore()
-    {
-        return score;
-    }
-    public void setAnswer(String answer)
-    {
-        this.answer = answer;
-    }
-    public int getCurrentRoundScore()
-    {
-        return this.roundScore;
-    }
     public String getWordForDrawer() {
         WordDictionary wordDictionary = wordDictionaryRepository.getRandom();
         if ( wordDictionary == null)
@@ -182,8 +118,9 @@ public class GameService {
     }
 
     @Transactional
-    public void saveGameData(Player p) {
-        p.setTotalScore(p.getTotalScore() + this.score);
+    public void saveGameData(Player p, GameRoom room) {
+        GameState gameState = room.getGameState();
+        p.setTotalScore(p.getTotalScore() + gameState.getTotalScore());
         p.setGamesPlayed(p.getGamesPlayed() + 1);
         playerRepository.save(p);
     }
@@ -199,32 +136,13 @@ public class GameService {
         }
         return p;
     }
-    public String giveHint(){
-        String hint = "";
-        if (getTriesLeft()<3)
-        {
-            return hint;
-        }
-        else
-        {
-            return hint;
-        }
-    }
-
-    // 새로 추가 메서드 - 조서연
-    public String getAnswer() {
-        // TODO Auto-generated method stub
-        return this.answer;
-    }
 
     @Transactional
-    public void saveGameHistory(Player p) {
-        System.out.println("[LOG] save game history 호출 " + p.getName() + ", total score: " + score );
-        saveGameHistory(p, roundResult, roundScores, score, this.gameId);
-    }
-
-    @Transactional
-    public void saveGameHistory(Player p, char[] roundResult, int[] roundScore, int totalScore, String gameId) {
+    public void saveGameHistory(Player p,
+                                char[] roundResult,
+                                int[] roundScore,
+                                int totalScore,
+                                String gameId) {
         GameHistory history = new GameHistory();
         history.setPlayer(p);
         history.setGameId(gameId);
@@ -243,26 +161,31 @@ public class GameService {
         history.setRound6Score(roundScore[5]);
 
         history.setTotalScore(totalScore);
-       // p.addGameHistory(history);
         gameHistoryRepository.save(history);
     }
-
-    public void setRoleRandomly(Player p1, Player p2) {
-        if (Math.random() < 0.5) {
-            p1.setRole(Role.DRAWER);
-            p2.setRole(Role.GUESSER);
-        } else {
-            p1.setRole(Role.GUESSER);
-            p2.setRole(Role.DRAWER);
-        }
+    @Transactional
+    public void saveGameHistory(Player p, GameRoom room) {
+        GameState state = room.getGameState();
+        saveGameHistory(
+                p,
+                state.getRoundResult(),
+                state.getRoundScores(),
+                state.getTotalScore(),
+                state.getGameId()
+        );
     }
-
-    public synchronized void prepareNextRound(List<Player> players)
+    public void prepareNextRound(GameRoom room)
     {
-        if (!needInitNextRound || isGameOver()) {
+        GameState gameState = room.getGameState();
+        if (!gameState.isNeedInitNextRound() || gameState.isGameOver()) {
             return;
         }
-        if (players == null || players.isEmpty()) return;
+         List<Player> players = room.getPlayerList();
+        if (players == null || players.isEmpty())
+        {
+            return;
+        }
+
         int currentDrawerIndex = -1;
         for (int i = 0; i < players.size(); i++) {
             if (players.get(i).getRole() == Role.DRAWER) {
@@ -271,29 +194,25 @@ public class GameService {
             }
         }
         int nextDrawerIndex;
-        if (currentDrawerIndex == -1){
+        if (currentDrawerIndex == -1)
+        {
             nextDrawerIndex = 0;
-        } else {
+        } else  {
             nextDrawerIndex = (currentDrawerIndex + 1)%players.size();
         }
-        for (int i = 0; i < players.size(); i++) {
-            Player p = players.get(i);
+        for (int i = 0; i<players.size(); i++) {
+            Player player = players.get(i);
             if (i == nextDrawerIndex) {
-                p.setRole(Role.DRAWER);
+                player.setRole(Role.DRAWER);
             } else {
-                p.setRole(Role.GUESSER);
+                player.setRole(Role.GUESSER);
             }
         }
-        newRound();
+
+        gameState.startNewRound();
         String answerWord = getWordForDrawer();
-        setAnswer(answerWord);
-        needInitNextRound = false;
-    }
-    public void startNewGameId() {
-        this.gameId = java.util.UUID.randomUUID().toString();
-    }
-    public String getGameId() {
-        return this.gameId;
+        gameState.assignAnswer(answerWord);
+        gameState.clearNeedInitNextRound();
     }
 
     public void assignRoles(List<Player> players) {

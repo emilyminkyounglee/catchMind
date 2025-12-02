@@ -6,21 +6,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameRoom {
-    private String roomId;
-    private GameService gameService;
-    private int capacity;
-    private List<Player> playerList = new ArrayList<>();
+    private final String roomId;
+    private final int capacity;
+    private final List<Player> playerList = new ArrayList<>();
 
-    public GameRoom(String roomId, GameService gameService, int capacity) {
+    private final GameState gameState = new GameState();
+
+    public GameRoom(String roomId, int capacity) {
         this.roomId = roomId;
-        this.gameService = gameService;
         this.capacity = capacity;
     }
+    public GameState getGameState() {
+        return gameState;
+    }
+
     public String getRoomId() {
         return roomId;
-    }
-    public GameService getGameService() {
-        return gameService;
     }
     public List<Player> getPlayerList() {
         return playerList;
@@ -32,14 +33,13 @@ public class GameRoom {
         return playerList.isEmpty();
     }
     public boolean addPlayer(Player p) {
-        if (p == null) {
+        if (p == null || isFull()) {
             return false;
         }
-        if (isFull()) {
-            return false;
-        }
-        if (playerList.contains(p)) {
-            return false;
+        for (Player player : playerList) {
+            if (player.getName() != null && player.getName().equals(p.getName())) {
+                return false;
+            }
         }
         playerList.add(p);
         return true;

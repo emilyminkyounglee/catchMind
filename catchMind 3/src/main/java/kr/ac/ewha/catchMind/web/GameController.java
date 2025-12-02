@@ -24,8 +24,6 @@ public class GameController {
     private final GameService gameService;
     private final GameSocketHandler gameSocketHandler;
     private final GameRoomManager gameRoomManager;
-//    private Player p1;
-//    private Player p2;
 
     public GameController(GameService gameService, GameSocketHandler gameSocketHandler, GameRoomManager gameRoomManager) {
         this.gameService = gameService;
@@ -34,21 +32,15 @@ public class GameController {
     }
 
     //공통으로 Model에 등록시킬 값들을 메서드로 처리
-    private void addCommonAttributes(Model model, Player me, String roomId) {
-        model.addAttribute("round", gameService.getCurrentRound());
-        model.addAttribute("triesLeft", gameService.getTriesLeft());
-        model.addAttribute("totalScore", gameService.getScore());
+    private void addCommonAttributes(Model model, GameRoom room, Player me) {
+        GameState gameState = new GameState();
+        model.addAttribute("round", gameState.getRound());
+        model.addAttribute("triesLeft", gameState.getTries());
+        model.addAttribute("totalScore", gameState.getTotalScore());
+        model.addAttribute("roomId", room.getRoomId());
 
-        // 나 정보
-        if (me != null) {
-            model.addAttribute("myName", me.getName());
-            model.addAttribute("myRole", me.getRole());
-        } else {
-            model.addAttribute("myName", "나");
-            model.addAttribute("myRole", null);
-        }
-
-        model.addAttribute("roomId", roomId);
+        model.addAttribute("myName", me.getName());
+        model.addAttribute("myRole", me.getRole());
     }
 
     @PostMapping("/start")
@@ -86,19 +78,19 @@ public class GameController {
             room.addPlayer(me);
         }
 
-        if (gameService.isGameOver()) {
+        if (gameService.isGameOver(room)) {
             System.out.println("[LOG] set new game");
-            gameService.setupNewGame(null, null);
-            gameService.startNewGameId();
+            gameService.setupNewGame(room);
+            gameService.startNewGameId(room);
 
             gameService.assignRoles(room.getPlayerList());
-            gameService.newRound();
+            room.getGameState().startNewRound();
             String answerWord = gameService.getWordForDrawer();
-            gameService.setAnswer(answerWord);
+            gameService.setAnswer(room, answerWord);
         }
-        addCommonAttributes(model, me, roomId);
+        addCommonAttributes(model, room, me);
         if(me.getRole().equals(Role.DRAWER)){
-            model.addAttribute("wordForDrawer", gameService.getAnswer());
+            model.addAttribute("wordForDrawer", gameService.getAnswer(room));
             return "mainUI_Drawer";
         } else {
             return "mainUI_Guesser";
@@ -122,7 +114,7 @@ public class GameController {
         if (me == null) {
             return "redirect:/";
         }
-        addCommonAttributes(model, me, roomId);
+        addCommonAttributes(model, room, me);
         return "mainUI_Guesser";  // templates/mainUI_Guesser.html
     }
     @PostMapping("/answer")
@@ -130,13 +122,6 @@ public class GameController {
 
         String roomId = session.getAttribute("roomId").toString();
 
-//        Player me = null;
-//        if (p1 !=null && userId != null && userId.equals(p1.getName())) {
-//            me = p1;
-//        }
-//        else if (p2 !=null && userId != null && userId.equals(p2.getName())) {
-//            me = p2;
-//        }
         if (roomId == null) {
             return "redirect:/";
         }
@@ -149,22 +134,22 @@ public class GameController {
             return "redirect:/";
         }
 
-        boolean correct = gameService.checkAnswer(answer);
-        boolean roundOver = gameService.isRoundOver(correct);
+        boolean correct = gameService.checkAnswer(room, answer);
+        boolean roundOver = gameService.isRoundOver(room, correct);
 
         try {
-            int currentRoundForMsg = gameService.getCurrentRound();
+            int currentRoundForMsg = gameService.getCurrentRound(room);
             if(roundOver) {
                 currentRoundForMsg -= 1;
             }
-            gameSocketHandler.sendGuessResult(roomId, correct, gameService.getTriesLeft(), gameService.getScore(),gameService.getCurrentRoundScore(), currentRoundForMsg);
+            gameSocketHandler.sendGuessResult(roomId, correct, gameService.getTriesLeft(room), gameService.getScore(room), room.getGameState().getRoundScore(), currentRoundForMsg);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         if (!roundOver) {
             // 라운드 안 끝났으면 다시 Guesser 화면
-            addCommonAttributes(model, me, roomId);
+            addCommonAttributes(model, room, me);
             model.addAttribute("lastResult", correct);
             if (me.getRole().equals(Role.GUESSER)) {
                 return "mainUI_Guesser";
@@ -172,52 +157,29 @@ public class GameController {
                 return "mainUI_Drawer";
             }
         }
-//        if (!gameService.isGameOver()) {
-//            gameService.changeRoles(p1, p2);
-//        }
 
+        GameState gameState = room.getGameState();
+        boolean roundSuccess = gameState.getRoundScore() > 0;
 
-        boolean roundSuccess = gameService.getCurrentRoundScore() > 0;
-
-        model.addAttribute("round", gameService.getCurrentRound() - 1); // 방금 끝난 라운드
+        model.addAttribute("round", gameState.getRound() - 1); // 방금 끝난 라운드
         model.addAttribute("roundSuccess", roundSuccess);
-        model.addAttribute("roundScore", gameService.getCurrentRoundScore());
-        model.addAttribute("totalScore", gameService.getScore());
-        model.addAttribute("answerWord", gameService.getAnswer());
+        model.addAttribute("roundScore", gameState.getRoundScore());
+        model.addAttribute("totalScore", gameState.getTotalScore());
+        model.addAttribute("answerWord", gameState.getAnswer());
         model.addAttribute("myName", me.getName());
 
         try {
-            gameSocketHandler.sendRoundEnd(roomId, gameService.getCurrentRound()-1, gameService.getAnswer(), correct);
+            gameSocketHandler.sendRoundEnd(roomId, gameState.getRound()-1, gameState.getAnswer(), correct);
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        Player other = (me == p1 ? p2 : p1);
-//        if(other != null) {
-//            model.addAttribute("otherName", other.getName());
-//        }
-////        try {
-//            GameMessage end = new GameMessage();
-//            end.setType("ROUND_END");
-//            end.setRound(gameService.getCurrentRound()-1);
-//            end.setAnswer(gameService.getAnswer());
-//            end.setRoundSuccess(correct);
-//
-//            String json = new ObjectMapper().writeValueAsString(end);
-//            gameSocketHandler.broadcast(json);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        try {
-//            gameSocketHandler.sendRoundEnd(roomId, gameService.getCurrentRound()-1, gameService.getAnswer(), correct);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+
         // 게임이 끝났으면 finalResult로 보내도 됨
-        if (gameService.isGameOver()) {
+        if (gameService.isGameOver(room)) {
             System.out.println("[LOG] game over! saving game history");
             for (Player p : room.getPlayerList()) {
-                gameService.saveGameHistory(p);
-                gameService.saveGameData(p);
+                gameService.saveGameHistory(p, room);
+                gameService.saveGameData(p, room);
             }
             return "finalResult";
         }
@@ -227,17 +189,26 @@ public class GameController {
 
     //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET
     @GetMapping("/answer")
-    public String showMidResult(Model model) {
+    public String showMidResult(Model model, HttpSession session) {
 
-        boolean roundSuccess = gameService.getCurrentRoundScore() > 0;
+        String roomId = session.getAttribute("roomId").toString();
+        if (roomId == null) {
+            return "redirect:/";
+        }
+        GameRoom room = gameRoomManager.getGameRoom(roomId);
+        if (room == null) {
+            return "redirect:/";
+        }
+        GameState gameState = room.getGameState();
+        boolean roundSuccess = gameState.getRoundScore() > 0;
 
-        model.addAttribute("round", gameService.getCurrentRound() - 1); // 방금 끝난 라운드
+        model.addAttribute("round", gameState.getRound() - 1); // 방금 끝난 라운드
         model.addAttribute("roundSuccess", roundSuccess);
-        model.addAttribute("roundScore", gameService.getCurrentRoundScore());
-        model.addAttribute("totalScore", gameService.getScore());
-        model.addAttribute("answerWord", gameService.getAnswer());
+        model.addAttribute("roundScore", gameState.getRoundScore());
+        model.addAttribute("totalScore", gameState.getTotalScore());
+        model.addAttribute("answerWord", gameState.getAnswer());
 
-        if (gameService.isGameOver()) {
+        if (gameService.isGameOver(room)) {
             return "finalResult";
         }
 
@@ -258,27 +229,23 @@ public class GameController {
             return "redirect:/";
         }
         // 1) 게임이 이미 끝났으면 저장 후 최종 결과
-        if (gameService.isGameOver()) {
+        if (gameService.isGameOver(room)) {
             return "finalResult";
         }
 
 
-        List<Player> players = room.getPlayerList();
-        gameService.prepareNextRound(players);
+        gameService.prepareNextRound(room);
         Player me = room.findPlayerByName(userId);
         if (me == null) {
             return "redirect:/";
         }
 
-        addCommonAttributes(model, me, roomId);
+        addCommonAttributes(model, room, me);
 
         String viewName;
         // 7) 내 역할에 따라 Drawer / Guesser 화면 분기
         if (me.getRole() == Role.DRAWER) {
-            // Drawer만 이번 라운드 제시어를 받음
-//            String answerWord = gameService.getWordForDrawer();
-//            gameService.setAnswer(answerWord);
-            model.addAttribute("wordForDrawer", gameService.getAnswer());
+            model.addAttribute("wordForDrawer", gameService.getAnswer(room));
             viewName = "mainUI_Drawer";
         } else {
             // Guesser는 제시어 없이 추측 화면
@@ -287,7 +254,7 @@ public class GameController {
         try {
             GameMessage start = new GameMessage();
             start.setType("ROUND_START");
-            start.setRound(gameService.getCurrentRound());
+            start.setRound(gameService.getCurrentRound(room));
             start.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
             start.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
             start.setRoomId(roomId);
@@ -297,9 +264,6 @@ public class GameController {
         }
         return viewName;
     }
-
-
-
 
     @PostMapping("/mypage")
     public String showMyPage(@RequestParam String userId, Model model) {

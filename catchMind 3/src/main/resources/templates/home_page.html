@@ -13,7 +13,7 @@
 <body class="bg-light">
 
 <!-- 공통 상단 바 -->
-<header th:replace="layouts/index :: global-header"></header>
+<header th:replace="~{layouts/index :: global-header}"></header>
 
 <!-- ===== 홈 화면 본문 ===== -->
 <main class="container d-flex flex-column justify-content-center align-items-center"
@@ -26,6 +26,16 @@
         <div class="mb-3 w-50">
             <label class="form-label fw-semibold">아이디 입력</label>
             <input type="text" class="form-control" name="userId" placeholder="아이디 입력" required/>
+        </div>
+        <div class="mb-3 w-50">
+            <label class="form-label fw-semibold">방 인원 선택</label>
+            <select class="form-select" name="capacity">
+                <option value="2" selected>2명</option>
+                <option value="3">3명</option>
+                <option value="4">4명</option>
+                <option value="5">5명</option>
+                <option value="6">6명</option>
+            </select>
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-primary w-50 fw-semibold" type="submit" formaction="/game/start">게임 시작</button>

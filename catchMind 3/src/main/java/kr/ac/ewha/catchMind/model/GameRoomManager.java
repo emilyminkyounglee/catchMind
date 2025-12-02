@@ -33,7 +33,7 @@ public class GameRoomManager {
             }
         }
         String roomId = UUID.randomUUID().toString();
-        GameRoom newRoom = new GameRoom(roomId, gameService, capacity);
+        GameRoom newRoom = new GameRoom(roomId, capacity);
         rooms.put(roomId, newRoom);
         return newRoom;
     }
