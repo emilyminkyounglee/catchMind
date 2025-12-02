@@ -230,4 +230,14 @@ public class GameService {
         }
     }
 
+    // 라운드 제한 시간 제공
+    public long getRoundLimitSeconds(GameRoom room) {
+        return GameState.ROUND_LIMIT_MS / 1000;
+    }
+
+    // 서버 시작 시점 제공
+    public long getServerStartTimeSeconds(GameRoom room) {
+        return room.getGameState().getRoundStartTime() / 1000;
+    }
+
 }

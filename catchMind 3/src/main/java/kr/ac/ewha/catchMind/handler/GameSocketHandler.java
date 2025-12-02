@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import kr.ac.ewha.catchMind.model.GameRoom;
 import kr.ac.ewha.catchMind.model.Player;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
@@ -24,6 +25,7 @@ import kr.ac.ewha.catchMind.handler.GameSocketHandler;
 @Component
 public class GameSocketHandler extends TextWebSocketHandler {
 
+    private final GameService gameService;
     // 접속한 클라이언트 세션들을 모아두는 리스트, thread-safe 리스트로 세션관리
     private static final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
@@ -35,8 +37,8 @@ public class GameSocketHandler extends TextWebSocketHandler {
     // JSON 문자열 <> java 객체 GameMessage 변환
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public GameSocketHandler() {
-
+    public GameSocketHandler(GameService gameService) {
+        this.gameService = gameService;
     }
     private void broadcastToRoom(String roomId, String jsonMessage) {
         for (WebSocketSession session : sessions) {
@@ -82,24 +84,27 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     // GameController에서 호출하여 라운드 시작 정보를 전송하는 메서드 (추가)
-    public void sendRoundStartMessage(Player p1, Player p2) throws Exception {
+    public void sendRoundStartMessage(GameRoom room) throws Exception {
         GameMessage startMsg = new GameMessage();
-        startMsg.setType("ROUND_START");
+        String roomId = room.getRoomId();
 
-        // [핵심] 타이머 동기화에 필요한 서버 시간 정보 포함 (초 단위)
-        startMsg.setLimitSeconds(gameService.getRoundLimitSeconds());
-        startMsg.setServerStartTime(gameService.getServerStartTimeSeconds());
+        startMsg.setType("ROUND_START");
+        startMsg.setRoomId(roomId); // RoomId 설정
+
+        // [핵심 수정] GameRoom을 인수로 넘겨서 타이머 정보 가져오기
+        startMsg.setLimitSeconds(gameService.getRoundLimitSeconds(room));
+        startMsg.setServerStartTime(gameService.getServerStartTimeSeconds(room));
 
         // 기타 라운드 정보
-        startMsg.setRound(gameService.getCurrentRound());
-        startMsg.setTotalScore(gameService.getScore());
-        startMsg.setTriesLeft(gameService.getTriesLeft());
+        startMsg.setRound(gameService.getCurrentRound(room));
+        startMsg.setTotalScore(gameService.getScore(room));
+        startMsg.setTriesLeft(gameService.getTriesLeft(room));
 
-        // 누가 DRAWER/GUESSER인지 UI 동기화를 위해 전송
-        startMsg.setDrawerName(gameService.getDrawerName(p1, p2));
-        startMsg.setGuesserName(gameService.getGuesserName(p1, p2));
+        // 누가 DRAWER/GUESSER인지 UI 동기화를 위해 전송 (PlayerList에서 가져옵니다)
+        startMsg.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
+        startMsg.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
 
-        broadcast(objectMapper.writeValueAsString(startMsg));
+        broadcastToRoom(roomId, objectMapper.writeValueAsString(startMsg));
     }
 
     // 메시지 수신 시

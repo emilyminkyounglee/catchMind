@@ -260,6 +260,41 @@ function updatePlayerList(players) {
        * GUESS_RESULT 메시지 처리
        * - Drawer/Guesser 둘 다 이걸 받아서 "정답/오답" + 시도횟수/점수/라운드 공유
        */
+
+      // [복구] 서버 기반 타이머 로직을 전역으로 이동
+      let timerInterval = null;
+
+      /**
+       * 서버 시간 기준으로 클라이언트 타이머 동기화
+       * @param {number} limitSeconds 라운드 제한 시간 (초)
+       * @param {number} serverStartTime 서버에서 라운드가 시작된 시점 (초 단위 Epoch Time)
+       */
+      function startTimer(limitSeconds, serverStartTime) {
+        if (timerInterval) clearInterval(timerInterval);
+
+        const display = document.getElementById("timer-display");
+        if (!display) return;
+
+        timerInterval = setInterval(() => {
+          const nowSec = Date.now() / 1000;
+          const elapsed = nowSec - serverStartTime;
+          const remain = Math.max(0, limitSeconds - elapsed);
+
+          const min = Math.floor(remain / 60);
+          const sec = Math.floor(remain % 60);
+
+          // 화면 업데이트
+          display.textContent =
+            String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+
+          if (remain <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            log("타이머 종료. 서버 응답 대기 중.");
+          }
+        }, 250); // 250ms 마다 갱신
+      }
+
       function handleGuessResult(msg) {
         const box = document.getElementById("guess-result");
         if (box) {
@@ -275,6 +310,7 @@ function updatePlayerList(players) {
             box.className = "mt-2 fw-semibold text-danger";
           }
         }
+      }
 
         // ---- 여기서부터 공통 UI 동기화 ----
 
@@ -341,10 +377,25 @@ function updatePlayerList(players) {
         handleRoundNext(msg);
         break;
 
-      case "ROUND_START":
+      //case "ROUND_START":
         // 대기방이든 어디든, 게임 시작 신호 오면 게임 화면으로 이동
-        window.location.href = "/game/play";
-        break;
+        /*window.location.href = "/game/play";
+        break;*/
+      case "ROUND_START":
+              log("ROUND_START received", msg);
+
+              // 캔버스 초기화
+              clearCanvas();
+
+              // [핵심 추가] 타이머 시작
+              if (typeof msg.limitSeconds === "number" && typeof msg.serverStartTime === "number") {
+                  startTimer(msg.limitSeconds, msg.serverStartTime);
+              }
+
+              // 대기방이든 어디든, 게임 시작 신호 오면 게임 화면으로 이동
+              window.location.href = "/game/play";
+              break;
+
 
       case "PLAYER_LIST":
           updatePlayerList(msg.players);

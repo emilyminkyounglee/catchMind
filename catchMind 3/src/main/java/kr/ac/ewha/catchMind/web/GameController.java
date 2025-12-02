@@ -110,7 +110,14 @@ public class GameController {
             String answerWord = gameService.getWordForDrawer();
             gameService.setAnswer(room, answerWord);
         }
+
         try {
+            gameSocketHandler.sendRoundStartMessage(room); // Room 객체만 전달
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "redirect:/game/play";
+        /*try {
             GameMessage start = new GameMessage();
             start.setType("ROUND_START");
             start.setRoomId(roomId);
@@ -122,7 +129,7 @@ public class GameController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "redirect:/game/play";
+        return "redirect:/game/play";*/
     }
 
     @GetMapping("/play")
@@ -284,7 +291,14 @@ public class GameController {
         }
 
         addCommonAttributes(model, room, me);
+
         try {
+            gameSocketHandler.sendRoundStartMessage(room); // Room 객체만 전달
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "redirect:/game/play";
+        /*try {
             GameMessage start = new GameMessage();
             start.setType("ROUND_START");
             start.setRound(gameService.getCurrentRound(room));
@@ -295,7 +309,7 @@ public class GameController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "redirect:/game/play";
+        return "redirect:/game/play";*/
     }
 
     @PostMapping("/mypage")

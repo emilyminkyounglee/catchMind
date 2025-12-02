@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public class GameState {
     private static final int MAX_ROUNDS = 6;
-    private static final long ROUND_LIMIT_MS = 90000;
+    public static final long ROUND_LIMIT_MS = 90000;
 
     private int tries = 5;
     private int round = 1;
@@ -122,4 +122,8 @@ public class GameState {
     public int[] getRoundScores() {
         return roundScores;
     }
+
+    public long getRoundStartTime() { return roundStartTime; }
+
+    public void setRoundStartTime(long roundStartTime) { this.roundStartTime = roundStartTime; }
 }
