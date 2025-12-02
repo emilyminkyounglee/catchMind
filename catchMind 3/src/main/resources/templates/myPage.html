@@ -59,7 +59,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="h : ${histories}">
-                    <td th:text="${h.id}">uuid</td>
+                    <td th:text="${h.gameId}">uuid</td>
 
                     <!-- 라운드 결과 + 점수 같이 보여주기 예: O(3점), X(0점) -->
                     <td th:text="${h.round1Result} + '(' + (${h.round1Score} ?: 0) + '점)'">O(3점)</td>

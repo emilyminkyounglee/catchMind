@@ -25,18 +25,24 @@
               th:text="${round} + ' / 6'">1 / 6</span>
     </div>
 
-    <!-- 플레이어 이름 -->
+    <!-- 방 정보 (roomId 있으면 표시, 없으면 '-') -->
     <div class="mb-2">
-        <span class="fw-semibold me-2">Drawer</span>
-        <span th:text="${drawerName}">플레이어 1</span>
+        <span class="fw-semibold me-2">Room</span>
+        <span th:text="${roomId} ?: '-'">-</span>
+    </div>
+
+    <!-- 내 정보 -->
+    <div class="mb-2">
+        <span class="fw-semibold me-2">내 이름</span>
+        <span th:text="${myName}">나</span>
     </div>
 
     <div class="mb-2">
-        <span class="fw-semibold me-2">Guesser</span>
-        <span th:text="${guesserName}">플레이어 2</span>
+        <span class="fw-semibold me-2">내 역할</span>
+        <span th:text="${myRole}">ROLE</span>
     </div>
 
-    <!-- 타이머 (지금은 JS로 채울 예정, 서버 값은 나중에 연결해도 됨) -->
+    <!-- 타이머 -->
     <div class="mb-2">
         <span class="fw-semibold me-2">Timer</span>
         <span id="timer-display">01:30</span>
@@ -47,15 +53,16 @@
         <span class="fw-semibold me-2">Attempts</span>
         <span id="attempt-icons">
             <!-- triesLeft 개수만큼 클로버 출력 -->
-            <span th:each="i : ${#numbers.sequence(1, triesLeft)}">
+            <span th:if="${triesLeft != null}"
+                  th:each="i : ${#numbers.sequence(1, triesLeft)}">
                 <img src="/image/clover_icon.png"
                      alt="Attempt"
-                    style="height:18px; margin:0 2px;">
+                     style="height:18px; margin:0 2px;">
             </span>
         </span>
     </div>
 
-    <!-- 점수: 나중에 totalScore를 넘겨주면 표시되도록 기본값 0 -->
+    <!-- 점수 -->
     <div class="mb-0">
         <span class="fw-semibold me-2">Score</span>
         <span id="score" th:text="${totalScore} ?: 0">0</span> pts
@@ -64,4 +71,3 @@
 
 </body>
 </html>
-

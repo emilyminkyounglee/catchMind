@@ -8,6 +8,8 @@ public class GameHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+    @Column(name = "game_id", nullable = false, length = 36)
+    private String gameId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
@@ -150,5 +152,11 @@ public class GameHistory {
     }
     public void setPlayer(Player player) {
         this.player = player;
+    }
+    public void setGameId(String gameId) {
+        this.gameId = gameId;
+    }
+    public String getGameId() {
+        return gameId;
     }
 }

@@ -1,9 +1,35 @@
 // static/js/game-socket.js
 
+function updatePlayerList(players) {
+  const listEl = document.getElementById("waiting-player-list");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  players.forEach(name => {
+    const li = document.createElement("li");
+    li.className = "list-group-item py-1";
+    li.textContent = name;
+    listEl.appendChild(li);
+  });
+}
+
 (function () {
   // ===============================
   // 0. 공통: WebSocket 연결
   // ===============================
+
+
+  // 내 역할(DRAWER / GUESSER)
+  const roleMeta = document.querySelector('meta[name="my-role"]');
+  const myRole = roleMeta ? roleMeta.content : null;
+   // [ADD] 방/닉네임 정보 (JOIN, DRAW 때 같이 보낼 것)
+    const roomMeta = document.querySelector('meta[name="room-id"]');
+    const nameMeta = document.querySelector('meta[name="my-name"]');
+    const roomId = roomMeta ? roomMeta.content : null;
+    const myName = nameMeta ? nameMeta.content : null;
+
+
   const socketUrl =
     (location.protocol === "https:" ? "wss://" : "ws://") +
     location.host +
@@ -14,7 +40,23 @@
     console.log("[WS]", ...args);
   }
 
-  socket.addEventListener("open", () => log("connected"));
+
+  //socket.addEventListener("open", () => log("connected"));
+    socket.addEventListener("open", () => {
+      log("connected");
+
+      // [ADD] 연결되면 JOIN 메시지 한번 날려주기
+      if (roomId && myName) {
+        send({
+          type: "JOIN",
+          roomId: roomId,
+          nickname: myName,
+          role: myRole, // DRAWER / GUESSER
+        });
+      } else {
+        log("JOIN not sent - roomId or myName missing", { roomId, myName, myRole });
+      }
+    });
   socket.addEventListener("close", () => log("closed"));
   socket.addEventListener("error", (e) => log("error", e));
 
@@ -26,9 +68,6 @@
     }
   }
 
-  // 내 역할(DRAWER / GUESSER)
-  const roleMeta = document.querySelector('meta[name="my-role"]');
-  const myRole = roleMeta ? roleMeta.content : null;
 
   // ===============================
   // 1. 캔버스 기본 세팅
@@ -66,18 +105,6 @@
     ctx.stroke();
   }
 
-  // ===============================
-  // 2. DRAWER: 마우스로 그리기 + 서버로 좌표 전송
-  //   JSON 형식 :
-  //   {
-  //     "type": "DRAW",
-  //     "x": 120,
-  //     "y": 240,
-  //     "color": "#000000",
-  //     "thickness": 4,
-  //     "dragging": true
-  //   }
-  // ===============================
   let drawing = false;
   let lastX = 0;
   let lastY = 0;
@@ -93,6 +120,7 @@
   function sendDrawPoint(x, y, dragging) {
     send({
       type: "DRAW",
+      roomId: roomId,
       x: x,
       y: y,
       color: "#000000",
@@ -170,27 +198,36 @@
 
   // ===============================
   // 4. GUESSER: 정답 전송
-  // ===============================
+//  // ===============================
   const guessForm = document.getElementById("guess-form");
   const answerInput = document.getElementById("answer-input");
+   if (guessForm && answerInput) {
+      guessForm.addEventListener("submit", (e) => {
+        e.preventDefault(); // ★ 여기서 페이지 이동 막기
 
-  if (guessForm && answerInput) {
-    guessForm.addEventListener("submit", (e) => {
-      e.preventDefault();
+        const value = answerInput.value.trim();
+        if (!value) return;
 
-      const value = answerInput.value.trim();
-      if (!value) return;
+        const formData = new FormData(guessForm);
+        // answer, userId 둘 다 form 안에 있으니까 그대로 전송
+        fetch(guessForm.action, {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => {
+            // 굳이 응답 HTML 안 써도 됨
+            // round가 끝나면 서버에서 ROUND_END 메시지 보내고,
+            // game-socket.js의 handleRoundEnd가 /game/answer 로 이동시켜 줌
+          })
+          .catch((err) => {
+            console.error("submit error", err);
+          });
 
-      send({
-        type: "GUESS",
-        guess: value,
+        // 입력창은 비우고 다시 포커스
+        answerInput.value = "";
+        answerInput.focus();
       });
-
-      answerInput.value = "";
-      answerInput.focus();
-    });
-  }
-
+    }
   // ===============================
   // 5. 라운드/점수/타이머 & 결과 UI
   // ===============================
@@ -211,169 +248,72 @@
     }
   }
 
-  function handleGuessResult(msg) {
-    const resultDiv = document.getElementById("guess-result");
-    if (resultDiv) {
-      resultDiv.textContent = msg.correct
-        ? "정답입니다!"
-        : "틀렸습니다. 다시 시도해보세요!";
-      resultDiv.className =
-        "mt-3 fw-semibold " + (msg.correct ? "text-success" : "text-danger");
-    }
+  // ===============================
+  // 5. 라운드/점수/타이머 & 결과 UI
+  // ===============================
 
-    if (typeof msg.triesLeft === "number") {
-      renderAttempts(msg.triesLeft);
-    }
-
-    const scoreSpan = document.getElementById("score");
-    if (scoreSpan && typeof msg.totalScore === "number") {
-      scoreSpan.textContent = msg.totalScore;
-    }
-
-    const roundSpan = document.getElementById("round-info");
-    if (roundSpan && typeof msg.round === "number") {
-      roundSpan.textContent = msg.round + " / 6";
-    }
-  }
-
-    /*
-    * 서버 기반 타이머: 서버에서 시작 시점과 제한 시간을 받아 클라이언트에서 남은 시간을 계산하여 표시
-    * limitSeconds: 라운드 제한 시간 (예: 90)
-    * serverStartTime: 라운드가 서버에서 시작된 시점 (Epoch Time, 초 단위)
-    */
-    let timerInterval = null;
-
-    function startTimer(limitSeconds, serverStartTime) {
-      if (timerInterval) clearInterval(timerInterval);
-
-      const display = document.getElementById("timer-display");
-      if (!display) return;
-
-      timerInterval = setInterval(() => {
-        // 현재 시간 (초)
-        const nowSec = Date.now() / 1000;
-
-        // 경과 시간
-        const elapsed = nowSec - serverStartTime;
-
-        // 남은 시간 계산 (0초 미만으로 내려가지 않도록)
-        const remain = Math.max(0, limitSeconds - elapsed);
-
-        const min = Math.floor(remain / 60);
-        const sec = Math.floor(remain % 60);
-
-        // 화면 업데이트
-        display.textContent =
-          String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
-
-        // 남은 시간이 0초 이하가 되면 타이머 멈춤
-        if (remain <= 0) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-
-          log("타이머 종료. 서버 응답 대기 중.");
+  /**
+   * GUESS_RESULT 메시지 처리
+   * - Drawer/Guesser 둘 다 이걸 받아서 "정답/오답" 메시지를 공유해서 볼 수 있게 함
+   */
+      /**
+       * GUESS_RESULT 메시지 처리
+       * - Drawer/Guesser 둘 다 이걸 받아서 "정답/오답" + 시도횟수/점수/라운드 공유
+       */
+      function handleGuessResult(msg) {
+        const box = document.getElementById("guess-result");
+        if (box) {
+          if (msg.correct) {
+            box.textContent = `정답입니다! (이번 라운드 점수: ${msg.roundScore}, 총점: ${msg.totalScore})`;
+            box.className = "mt-2 fw-semibold text-success";
+          } else {
+            if (typeof msg.triesLeft === "number") {
+              box.textContent = `틀렸습니다. 다시 시도해보세요! ( 남은 기회: ${msg.triesLeft}번 )`;
+            } else {
+              box.textContent = "틀렸습니다. 다시 시도해보세요!";
+            }
+            box.className = "mt-2 fw-semibold text-danger";
+          }
         }
-      }, 250); // 250ms 마다 갱신하여 부드럽게 보이도록
-    }
 
-    // 화면에 분:초 (01:30) 형태로 찍어주는 도우미 함수
-    function updateTimerDisplay(element, secondsLeft) {
-      if (!element) return;
+        // ---- 여기서부터 공통 UI 동기화 ----
 
-      let min = Math.floor(secondsLeft / 60);
-      let sec = secondsLeft % 60;
+        // Attempts(네잎클로버)
+        if (typeof msg.triesLeft === "number") {
+          renderAttempts(msg.triesLeft);
+        }
 
-      // 0 -> "00", 9 -> "09" 로 만들기
-      if (min < 10) min = "0" + min;
-      if (sec < 10) sec = "0" + sec;
+        // Score
+        if (typeof msg.totalScore === "number") {
+          const scoreSpan = document.getElementById("score");
+          if (scoreSpan) {
+            scoreSpan.textContent = msg.totalScore;
+          }
+        }
 
-      element.textContent = min + ":" + sec;
-    }
-
-//  function handleRoundStart(msg) {
-//    const roundSpan = document.getElementById("round-info");
-//    if (roundSpan && typeof msg.round === "number") {
-//      roundSpan.textContent = msg.round + " / 6";
-//    }
-//
-//    if (typeof msg.triesLeft === "number") {
-//      renderAttempts(msg.triesLeft);
-//    }
-//
-//    const scoreSpan = document.getElementById("score");
-//    if (scoreSpan && typeof msg.totalScore === "number") {
-//      scoreSpan.textContent = msg.totalScore;
-//    }
-//
-//    // Drawer에게만 제시어 표시
-//    if (myRole === "DRAWER") {
-//      const wordEl = document.getElementById("drawer-word");
-//      if (wordEl && msg.answerForDrawer) {
-//        wordEl.textContent = msg.answerForDrawer;
-//      }
-//    }
-//
-//    clearCanvas();
-//    hasPrevPoint = false;
-//
-//    if (
-//      typeof msg.limitSeconds === "number" &&
-//      typeof msg.serverStartTime === "number"
-//    ) {
-//      startTimer(msg.limitSeconds, msg.serverStartTime);
-//    }
-//  }
-
-  // 여기 추가!
-  function handleRoundStart(msg) {
-      const roundSpan = document.getElementById("round-info");
-      if (roundSpan && typeof msg.round === "number") {
-        roundSpan.textContent = msg.round + " / 6";
-      }
-
-      if (typeof msg.triesLeft === "number") {
-        renderAttempts(msg.triesLeft);
-      }
-
-      const scoreSpan = document.getElementById("score");
-      if (scoreSpan && typeof msg.totalScore === "number") {
-        scoreSpan.textContent = msg.totalScore;
-      }
-
-      // Drawer에게만 제시어 표시
-      if (myRole === "DRAWER") {
-        const wordEl = document.getElementById("drawer-word");
-        if (wordEl && msg.answerForDrawer) {
-          wordEl.textContent = msg.answerForDrawer;
+        // Round
+        if (typeof msg.round === "number") {
+          const roundSpan = document.getElementById("round-info");
+          if (roundSpan) {
+            roundSpan.textContent = msg.round + " / 6";
+          }
         }
       }
-
-      clearCanvas();
-      hasPrevPoint = false;
-
-      if (
-        typeof msg.limitSeconds === "number" &&
-        typeof msg.serverStartTime === "number"
-      ) {
-        startTimer(msg.limitSeconds, msg.serverStartTime);
-        }
-    }
-    // 여기까지
 
   function handleRoundEnd(msg) {
-      // JS로 POST form 만들어서 자동 submit  (라운드 끝나고 이동 오류 해결)
+    window.location.href = "/game/answer";  // GET 요청 → 위 @GetMapping 타서 midResult 렌더
+  }
+  function handleRoundNext(msg) {
+   // 내가 아직 midResult(/game/answer)에 있다면
+    // 자동으로 /game/next-round POST 해서 다음 라운드로 진입
+    if (window.location.pathname === "/game/answer") {
       const form = document.createElement("form");
-      form.method = "POST";
+      form.method = "post";
       form.action = "/game/next-round";
-
       document.body.appendChild(form);
       form.submit();
+    }
   }
-
-  function handleGameOver(msg) {
-    window.location.href = "/game/final";
-  }
-
   // ===============================
   // 6. WebSocket 메시지 분기 처리
   // ===============================
@@ -394,18 +334,21 @@
       case "GUESS_RESULT":
         handleGuessResult(msg);
         break;
-
-      case "ROUND_START":
-        handleRoundStart(msg);
-        break;
-
       case "ROUND_END":
         handleRoundEnd(msg);
         break;
-
-      case "GAME_OVER":
-        handleGameOver(msg);
+      case "ROUND_NEXT":
+        handleRoundNext(msg);
         break;
+
+      case "ROUND_START":
+        // 대기방이든 어디든, 게임 시작 신호 오면 게임 화면으로 이동
+        window.location.href = "/game/play";
+        break;
+
+      case "PLAYER_LIST":
+          updatePlayerList(msg.players);
+          break;
 
       default:
         log("unknown message type:", msg);
@@ -415,5 +358,4 @@
   // ===============================
   // 7. 디버깅용 전역 훅
   // ===============================
-  window.gameTest = { handleGuessResult, handleRoundStart, renderAttempts };
 })();
