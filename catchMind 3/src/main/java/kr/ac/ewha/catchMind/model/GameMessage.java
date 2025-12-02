@@ -2,6 +2,8 @@ package kr.ac.ewha.catchMind.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.List;
+
 // 값이 null인 필드는 JSON으로 보낼 때 아예 빼버리기
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GameMessage {
@@ -10,6 +12,16 @@ public class GameMessage {
     private String type;// JOIN, DRAW, GUESS, GUESS_RESULT 등
 
     private String roomId;
+
+    private List<String> players;
+
+    public List<String> getPlayers() {
+        return players;
+    }
+
+    public void setPlayers(List<String> players) {
+        this.players = players;
+    }
 
     // 플레이어 정보
     private String nickname;

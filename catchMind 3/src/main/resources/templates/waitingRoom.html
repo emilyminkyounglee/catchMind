@@ -43,12 +43,8 @@
                     <!-- 플레이어 목록 -->
                     <div class="mb-3">
                         <strong>참여자 목록</strong>
-                        <ul class="list-group mt-2">
-                            <li class="list-group-item py-2"
-                                th:each="p : ${players}"
-                                th:text="${p.name}">
-                                player1
-                            </li>
+                        <ul id="waiting-player-list" class="list-group w-50">
+                            <!-- WebSocket으로 자동 채워짐 -->
                         </ul>
                     </div>
 
@@ -86,11 +82,6 @@
         </div>
     </div>
 </main>
-
-<!-- 자동 새로고침 (WebSocket 붙기 전 임시) -->
-<script>
-    setTimeout(() => location.reload(), 3000);
-</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -54,9 +54,12 @@ public class GameController {
             capacity = 2;
         }
         GameRoom room = gameRoomManager.getOrAddGameRoom(capacity);
+
         room.addPlayer(me);
 
         session.setAttribute("roomId", room.getRoomId());
+
+        gameSocketHandler.sendPlayerList(room.getRoomId(), room.getPlayerList());
 
         model.addAttribute("roomId", room.getRoomId());
         model.addAttribute("myName", me.getName());
@@ -70,35 +73,81 @@ public class GameController {
     }
 
     @GetMapping("/begin")
-    public String redirectBeginGet() {
-        return "redirect:/";
+    public String beginGet(@RequestParam String roomId,
+                           @RequestParam String userId,
+                           HttpSession session,
+                           Model model) {
+        // POST 버전 begin() 과 똑같이 동작하게
+        return begin(roomId, userId, session, model);
     }
     @PostMapping("/begin")
-    public String begin(@RequestParam String roomId,@RequestParam String userId, HttpSession session, Model model) {
+    public String begin(@RequestParam String roomId,
+                        @RequestParam String userId,
+                        HttpSession session,
+                        Model model) {
         GameRoom room = gameRoomManager.getGameRoom(roomId);
         if (room == null) {
             return "redirect:/";
         }
         session.setAttribute("userId", userId);
         session.setAttribute("roomId", roomId);
+
         Player me = gameService.loadPlayer(userId);
+
         if (me == null) {
             me = gameService.loadPlayer(userId);
             room.addPlayer(me);
         }
+        GameState gameState = room.getGameState();
 
-        if (gameService.isGameOver(room)) {
+        if (gameState.getGameId() == null || gameService.isGameOver(room)) {
             System.out.println("[LOG] set new game");
             gameService.setupNewGame(room);
             gameService.startNewGameId(room);
 
             gameService.assignRoles(room.getPlayerList());
-            room.getGameState().startNewRound();
+            gameState.startNewRound();
             String answerWord = gameService.getWordForDrawer();
             gameService.setAnswer(room, answerWord);
         }
+        try {
+            GameMessage start = new GameMessage();
+            start.setType("ROUND_START");
+            start.setRoomId(roomId);
+            start.setRound(gameService.getCurrentRound(room));
+            start.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
+            start.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
+
+            gameSocketHandler.sendRoundStart(roomId, start);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "redirect:/game/play";
+    }
+
+    @GetMapping("/play")
+    public String play(HttpSession session, Model model) {
+
+        String roomId = (String) session.getAttribute("roomId");
+        String userId = (String) session.getAttribute("userId");
+
+        if (roomId == null || userId == null) {
+            return "redirect:/";
+        }
+
+        GameRoom room = gameRoomManager.getGameRoom(roomId);
+        if (room == null) {
+            return "redirect:/";
+        }
+
+        Player me = room.findPlayerByName(userId);
+        if (me == null) {
+            return "redirect:/";
+        }
+
         addCommonAttributes(model, room, me);
-        if(me.getRole().equals(Role.DRAWER)){
+
+        if (me.getRole() == Role.DRAWER) {
             model.addAttribute("wordForDrawer", gameService.getAnswer(room));
             return "mainUI_Drawer";
         } else {
@@ -109,22 +158,7 @@ public class GameController {
 
     @GetMapping("/guesser")
     public String showGuesser(Model model, HttpSession session) {
-        // 게임 시작 전에 접근하면 홈으로 보내기
-        String roomId = (String) session.getAttribute("roomId");
-        String userId = session.getAttribute("userId").toString();
-        if (roomId == null || userId == null) {
-            return "redirect:/";
-        }
-        GameRoom room = gameRoomManager.getGameRoom(roomId);
-        if (room == null) {
-            return "redirect:/";
-        }
-        Player me = room.findPlayerByName(userId);
-        if (me == null) {
-            return "redirect:/";
-        }
-        addCommonAttributes(model, room, me);
-        return "mainUI_Guesser";  // templates/mainUI_Guesser.html
+        return "redirect:/game/play";
     }
     @PostMapping("/answer")
     public String submitAnswer(@RequestParam String answer, Model model, @RequestParam String userId, HttpSession session) {
@@ -250,16 +284,6 @@ public class GameController {
         }
 
         addCommonAttributes(model, room, me);
-
-        String viewName;
-        // 7) 내 역할에 따라 Drawer / Guesser 화면 분기
-        if (me.getRole() == Role.DRAWER) {
-            model.addAttribute("wordForDrawer", gameService.getAnswer(room));
-            viewName = "mainUI_Drawer";
-        } else {
-            // Guesser는 제시어 없이 추측 화면
-            viewName = "mainUI_Guesser";
-        }
         try {
             GameMessage start = new GameMessage();
             start.setType("ROUND_START");
@@ -271,7 +295,7 @@ public class GameController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return viewName;
+        return "redirect:/game/play";
     }
 
     @PostMapping("/mypage")

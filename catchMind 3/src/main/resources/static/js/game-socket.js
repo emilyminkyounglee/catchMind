@@ -1,5 +1,19 @@
 // static/js/game-socket.js
 
+function updatePlayerList(players) {
+  const listEl = document.getElementById("waiting-player-list");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  players.forEach(name => {
+    const li = document.createElement("li");
+    li.className = "list-group-item py-1";
+    li.textContent = name;
+    listEl.appendChild(li);
+  });
+}
+
 (function () {
   // ===============================
   // 0. 공통: WebSocket 연결
@@ -326,6 +340,15 @@
       case "ROUND_NEXT":
         handleRoundNext(msg);
         break;
+
+      case "ROUND_START":
+        // 대기방이든 어디든, 게임 시작 신호 오면 게임 화면으로 이동
+        window.location.href = "/game/play";
+        break;
+
+      case "PLAYER_LIST":
+          updatePlayerList(msg.players);
+          break;
 
       default:
         log("unknown message type:", msg);
