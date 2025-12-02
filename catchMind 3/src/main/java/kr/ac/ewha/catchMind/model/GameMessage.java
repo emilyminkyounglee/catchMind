@@ -7,7 +7,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class GameMessage {
 
     // 공통
-    private String type;        // JOIN, DRAW, GUESS, GUESS_RESULT 등
+    private String type;// JOIN, DRAW, GUESS, GUESS_RESULT 등
+
+    private String roomId;
 
     // 플레이어 정보
     private String nickname;
@@ -197,6 +199,13 @@ public class GameMessage {
 
     public void setText(String text) {
         this.text = text;
+    }
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
     }
 
 }

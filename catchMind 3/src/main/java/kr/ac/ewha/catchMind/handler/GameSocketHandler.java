@@ -2,6 +2,8 @@ package kr.ac.ewha.catchMind.handler;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Component;
@@ -22,6 +24,9 @@ public class GameSocketHandler extends TextWebSocketHandler {
     private static final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
     //private final GameService gameService;
+
+    private final Map<WebSocketSession, String> sessionRoomMap = new ConcurrentHashMap<WebSocketSession, String>();
+
 
     // JSON 문자열 <> java 객체 GameMessage 변환
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -45,6 +50,21 @@ public class GameSocketHandler extends TextWebSocketHandler {
 //            }
 //        }
 //    }
+    private void broadcastToRoom(String roomId, String jsonMessage) {
+        for (WebSocketSession session : sessions) {
+            if (!session.isOpen()) {
+                continue;
+            }
+            String sessionRoomId = sessionRoomMap.get(session);
+            if (roomId != null && roomId.equals(sessionRoomId)) {
+                try {
+                    session.sendMessage(new TextMessage(jsonMessage));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
     public void broadcast(String jsonMessage) {
         for (WebSocketSession session : sessions) {
             if (session.isOpen()) {
@@ -57,6 +77,15 @@ public class GameSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    // 👉 새로 추가: 특정 room 에 ROUND_START 같은 메시지 보낼 때 사용
+    public void sendRoundStart(String roomId, GameMessage msg) {
+        try {
+            String json = objectMapper.writeValueAsString(msg);
+            broadcastToRoom(roomId, json);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     // 소켓 연결 시
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -79,6 +108,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
             // 입장
             case "JOIN":
                 System.out.println(gameMsg.getNickname() + "님이 입장했습니다.");
+                handleJoin(session, gameMsg);
 
 //                // 간단한 테스트용 응답 (실제 역할 배정은 HTTP 컨트롤러에서 했으므로 여기선 UI 표시용)
 //                GameMessage syncMsg = new GameMessage();
@@ -86,12 +116,11 @@ public class GameSocketHandler extends TextWebSocketHandler {
 //                syncMsg.setDrawerName(gameMsg.getNickname()); // 일단 들어온 사람 이름 띄워주기
 //                syncMsg.setGuesserName("상대방");
 //                broadcast(objectMapper.writeValueAsString(syncMsg));
-                broadcast(payload);
                 break;
 
             // 그림 그리기
             case "DRAW":
-                broadcast(payload);
+                handleDraw(session, gameMsg);
                 break;
 
 //            // 정답 맞히기
@@ -134,6 +163,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         sessions.remove(session);
+        sessionRoomMap.remove(session);
         System.out.println("플레이어 접속 해제: " + session.getId());
     }
 
@@ -202,10 +232,11 @@ public class GameSocketHandler extends TextWebSocketHandler {
 //            }
 //        }
 //    }
-    public void sendGuessResult(boolean correct, int triesLeft, int totalScore, int roundScore, int currentRound) {
+    public void sendGuessResult(String roomId, boolean correct, int triesLeft, int totalScore, int roundScore, int currentRound) {
         try {
             GameMessage msg = new GameMessage();
             msg.setType("GUESS_RESULT");
+            msg.setRoomId(roomId);
             msg.setCorrect(correct);
             msg.setTriesLeft(triesLeft);
             msg.setTotalScore(totalScore);
@@ -213,9 +244,55 @@ public class GameSocketHandler extends TextWebSocketHandler {
             msg.setRound(currentRound);
 
             String json = objectMapper.writeValueAsString(msg);
-            broadcast(json);
+            broadcastToRoom(roomId, json);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    public void sendRoundEnd(String roomId,
+                             int round,
+                             String answer,
+                             boolean roundSuccess) {
+        try {
+            GameMessage end = new GameMessage();
+            end.setType("ROUND_END");
+            end.setRoomId(roomId);
+            end.setRound(round);
+            end.setAnswer(answer);
+            end.setRoundSuccess(roundSuccess);
+
+            String json = objectMapper.writeValueAsString(end);
+            broadcastToRoom(roomId, json);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private void handleJoin(WebSocketSession session, GameMessage msg) throws IOException {
+        String roomId = msg.getRoomId();
+        if (roomId == null) {
+            System.out.println("JOIN 메시지에 roomId 없음");
+            return;
+        }
+
+        sessionRoomMap.put(session, roomId);
+        System.out.println("세션 " + session.getId() + " 이(가) 방 " + roomId + " 에 참여");
+
+        // 입장 알림을 같은 방 사람들에게만 브로드캐스트
+        String json = objectMapper.writeValueAsString(msg);
+        broadcastToRoom(roomId, json);
+    }
+
+    private void handleDraw(WebSocketSession session, GameMessage msg) throws IOException {
+        String roomId = sessionRoomMap.get(session);
+        if (roomId == null) {
+            System.out.println("roomId 없는 세션에서 DRAW 수신, 무시");
+            return;
+        }
+
+        // 혹시 클라이언트에서 roomId 안 채워줬어도 서버에서 세팅
+        msg.setRoomId(roomId);
+
+        String json = objectMapper.writeValueAsString(msg);
+        broadcastToRoom(roomId, json);
     }
 }

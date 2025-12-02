@@ -4,6 +4,18 @@
   // ===============================
   // 0. 공통: WebSocket 연결
   // ===============================
+
+
+  // 내 역할(DRAWER / GUESSER)
+  const roleMeta = document.querySelector('meta[name="my-role"]');
+  const myRole = roleMeta ? roleMeta.content : null;
+   // [ADD] 방/닉네임 정보 (JOIN, DRAW 때 같이 보낼 것)
+    const roomMeta = document.querySelector('meta[name="room-id"]');
+    const nameMeta = document.querySelector('meta[name="my-name"]');
+    const roomId = roomMeta ? roomMeta.content : null;
+    const myName = nameMeta ? nameMeta.content : null;
+
+
   const socketUrl =
     (location.protocol === "https:" ? "wss://" : "ws://") +
     location.host +
@@ -14,7 +26,23 @@
     console.log("[WS]", ...args);
   }
 
-  socket.addEventListener("open", () => log("connected"));
+
+  //socket.addEventListener("open", () => log("connected"));
+    socket.addEventListener("open", () => {
+      log("connected");
+
+      // [ADD] 연결되면 JOIN 메시지 한번 날려주기
+      if (roomId && myName) {
+        send({
+          type: "JOIN",
+          roomId: roomId,
+          nickname: myName,
+          role: myRole, // DRAWER / GUESSER
+        });
+      } else {
+        log("JOIN not sent - roomId or myName missing", { roomId, myName, myRole });
+      }
+    });
   socket.addEventListener("close", () => log("closed"));
   socket.addEventListener("error", (e) => log("error", e));
 
@@ -26,9 +54,6 @@
     }
   }
 
-  // 내 역할(DRAWER / GUESSER)
-  const roleMeta = document.querySelector('meta[name="my-role"]');
-  const myRole = roleMeta ? roleMeta.content : null;
 
   // ===============================
   // 1. 캔버스 기본 세팅
@@ -93,6 +118,7 @@
   function sendDrawPoint(x, y, dragging) {
     send({
       type: "DRAW",
+      roomId: roomId,
       x: x,
       y: y,
       color: "#000000",

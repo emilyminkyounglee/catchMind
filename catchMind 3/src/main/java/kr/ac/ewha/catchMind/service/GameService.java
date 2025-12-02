@@ -145,13 +145,14 @@ public class GameService {
 //            player.setRole(Role.GUESSER);
 //        }
 //    }
-    public void changeRoles(Player p1, Player p2) //역할 바꿔주기
-    {
-        Role p2Role = p1.getRole();
-        Role p1Role = p2.getRole();
-        p1.setRole(p1Role);
-        p2.setRole(p2Role);
-    }
+//    public void changeRoles(Player p1, Player p2) //역할 바꿔주기
+//    {
+//        Role p2Role = p1.getRole();
+//        Role p1Role = p2.getRole();
+//        p1.setRole(p1Role);
+//        p2.setRole(p2Role);
+//    }
+
     public int getScore()
     {
         return score;
@@ -172,24 +173,49 @@ public class GameService {
         }
         return wordDictionary.getWord();
     }
-    public String getDrawerName(Player p1, Player p2) {
-        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.DRAWER)) {
-            return p1.getName();
-        }
-        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.DRAWER)) {
-            return p2.getName();
-        }
-        return "Drawer"; // 기본값
+//    public String getDrawerName(Player p1, Player p2) {
+//        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.DRAWER)) {
+//            return p1.getName();
+//        }
+//        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.DRAWER)) {
+//            return p2.getName();
+//        }
+//        return "Drawer"; // 기본값
+//    }
+//
+//    public String getGuesserName(Player p1, Player p2) {
+//        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.GUESSER)) {
+//            return p1.getName();
+//        }
+//        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.GUESSER)) {
+//            return p2.getName();
+//        }
+//        return "Guesser"; // 기본값
+//    }
+    public String getDrawerName(List<Player> players) {
+        Player drawer = findDrawer(players);
+        return drawer != null ? drawer.getName() : "Drawer";
     }
 
-    public String getGuesserName(Player p1, Player p2) {
-        if (p1 != null && p1.getRole() != null && p1.getRole().equals(Role.GUESSER)) {
-            return p1.getName();
+    public String getGuesserName(List<Player> players) {
+        Player guesser = findGuesser(players);
+        return guesser != null ? guesser.getName() : "Guesser";
+    }
+
+    public Player findDrawer(List<Player> players) {
+        if (players == null) return null;
+        for (Player p : players) {
+            if (p.getRole() == Role.DRAWER) return p;
         }
-        if (p2 != null && p2.getRole() != null && p2.getRole().equals(Role.GUESSER)) {
-            return p2.getName();
+        return null;
+    }
+
+    public Player findGuesser(List<Player> players) {
+        if (players == null) return null;
+        for (Player p : players) {
+            if (p.getRole() == Role.GUESSER) return p;
         }
-        return "Guesser"; // 기본값
+        return null;
     }
 
     @Transactional
@@ -268,12 +294,33 @@ public class GameService {
         }
     }
 
-    public synchronized void prepareNextRound(Player p1, Player p2)
+    public synchronized void prepareNextRound(List<Player> players)
     {
         if (!needInitNextRound || isGameOver()) {
             return;
         }
-        changeRoles(p1, p2);
+        if (players == null || players.isEmpty()) return;
+        int currentDrawerIndex = -1;
+        for (int i = 0; i < players.size(); i++) {
+            if (players.get(i).getRole() == Role.DRAWER) {
+                currentDrawerIndex = i;
+                break;
+            }
+        }
+        int nextDrawerIndex;
+        if (currentDrawerIndex == -1){
+            nextDrawerIndex = 0;
+        } else {
+            nextDrawerIndex = (currentDrawerIndex + 1)%players.size();
+        }
+        for (int i = 0; i < players.size(); i++) {
+            Player p = players.get(i);
+            if (i == nextDrawerIndex) {
+                p.setRole(Role.DRAWER);
+            } else {
+                p.setRole(Role.GUESSER);
+            }
+        }
         newRound();
         String answerWord = getWordForDrawer();
         setAnswer(answerWord);
@@ -285,4 +332,20 @@ public class GameService {
     public String getGameId() {
         return this.gameId;
     }
+
+    public void assignRoles(List<Player> players) {
+        if (players == null || players.size() == 0) {
+            return;
+        }
+        int drawerIndex = (int)(Math.random() * players.size());
+        for(int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            if (i == drawerIndex) {
+                player.setRole(Role.DRAWER);
+            } else  {
+                player.setRole(Role.GUESSER);
+            }
+        }
+    }
+
 }
