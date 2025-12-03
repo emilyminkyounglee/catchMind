@@ -3,7 +3,7 @@
 <body>
 
 <!-- 그림판 영역 Fragment -->
-<section class="col-lg-8" aria-label="그림판 영역" th:fragment="drawing-area">
+<section aria-label="그림판 영역" th:fragment="drawing-area">
     <article class="border bg-white h-100 p-2">
         <!-- 실제 그림판: canvas -->
         <div class="ratio ratio-4x3">
@@ -12,7 +12,10 @@
             </canvas>
         </div>
     </article>
+
+
 </section>
+
 
 <!-- 게임 정보 카드 Fragment -->
 <section class="border bg-white p-3 mb-3" th:fragment="game-info-card">

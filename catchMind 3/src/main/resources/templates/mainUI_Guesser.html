@@ -21,12 +21,13 @@
 <main class="container-fluid py-3">
     <div class="row g-3">
 
-        <!-- 그림판 Fragment -->
-        <section class="col-lg-8"
-                 th:replace="layouts/mainGameUI :: drawing-area">
+        <!-- 🔹 왼쪽: 그림판 col -->
+        <section class="col-lg-8">
+            <!-- 실제 그림판 fragment를 안쪽 div에 삽입 -->
+            <div th:replace="layouts/mainGameUI :: drawing-area"></div>
         </section>
 
-        <!-- 우측 패널 -->
+        <!-- 🔹 오른쪽: 게임 정보 + 정답 입력 -->
         <aside class="col-lg-4">
 
             <!-- 공통 게임 정보 -->
@@ -59,7 +60,6 @@
             <!-- 정답 결과 (웹소켓으로 실시간 업데이트) -->
             <section class="border bg-white p-3 mt-3">
                 <h2 class="h6 mb-2">정답 결과</h2>
-                <!-- JS에서 textContent / className으로 덮어쓸 영역 -->
                 <div id="guess-result" class="small text-muted">
                     아직 결과가 없습니다.
                 </div>

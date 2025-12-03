@@ -5,15 +5,48 @@ function updatePlayerList(players) {
   const listEl = document.getElementById("waiting-player-list");
   if (!listEl) return;
 
+  // 1) 목록 비우고 다시 채우기
   listEl.innerHTML = "";
-
   players.forEach((name) => {
     const li = document.createElement("li");
     li.className = "list-group-item py-1";
     li.textContent = name;
     listEl.appendChild(li);
   });
+
+  // 2) 현재 인원 숫자 바꾸기
+  const countEl = document.getElementById("current-count");
+  if (countEl) {
+    countEl.textContent = players.length;
+  }
+
+  // 3) 정원 읽어오기
+  const capacityEl = document.getElementById("room-capacity");
+  const capacity = capacityEl ? parseInt(capacityEl.textContent, 10) : null;
+
+  const startBtn = document.getElementById("btn-start-game");
+  const waitMsg = document.getElementById("msg-wait");
+  const fullMsg = document.getElementById("msg-full");
+
+  if (capacity != null) {
+    const isFull = players.length >= capacity;
+
+    // 4) 버튼 활성/비활성
+    if (startBtn) {
+      startBtn.disabled = !isFull;
+    }
+
+    // 5) 안내 문구 토글
+    if (waitMsg) {
+      waitMsg.style.display = isFull ? "none" : "";
+    }
+    if (fullMsg) {
+      fullMsg.style.display = isFull ? "" : "none";
+    }
+  }
 }
+
+
 
 (function () {
   // ===============================
@@ -307,6 +340,11 @@ function updatePlayerList(players) {
   const startBtn = document.getElementById("btn-start-game");
   if (startBtn) {
     startBtn.addEventListener("click", () => {
+      // 아직 인원 안 찼으면 무시
+      if (startBtn.disabled) {
+        return;
+      }
+
       if (!roomId || !myName) {
         log("GAME_START not sent - roomId or myName missing", {
           roomId,
@@ -314,6 +352,7 @@ function updatePlayerList(players) {
         });
         return;
       }
+
       send({
         type: "GAME_START",
         roomId: roomId,
@@ -321,6 +360,7 @@ function updatePlayerList(players) {
       });
     });
   }
+
 
   // ===============================
   // 5. WebSocket 메시지 분기 처리
