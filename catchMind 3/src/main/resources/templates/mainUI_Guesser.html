@@ -21,43 +21,32 @@
 <main class="container-fluid py-3">
     <div class="row g-3">
 
-        <!-- 🔹 왼쪽: 그림판 col -->
-        <section class="col-lg-8">
-            <!-- 실제 그림판 fragment를 안쪽 div에 삽입 -->
-            <div th:replace="layouts/mainGameUI :: drawing-area"></div>
-        </section>
+        <!-- 왼쪽: 그림판 -->
+        <div th:replace="layouts/mainGameUI :: drawing-area"></div>
 
-        <!-- 🔹 오른쪽: 게임 정보 + 정답 입력 -->
+        <!-- 오른쪽: 게임 정보 + 정답 입력 -->
         <aside class="col-lg-4">
 
-            <!-- 공통 게임 정보 -->
             <section class="border bg-white p-3 mb-3"
                      th:replace="layouts/mainGameUI :: game-info-card">
             </section>
 
-            <!-- 정답 입력 -->
             <section class="border bg-white p-3">
                 <h2 class="h6">정답 입력</h2>
-
                 <form th:action="@{/game/answer}" method="post"
                       class="d-flex gap-2 mt-2" id="guess-form">
-
                     <input type="text"
                            name="answer"
                            class="form-control"
                            placeholder="정답을 입력하세요"
                            id="answer-input"/>
-
-                    <!-- 서버에서 나를 구분하기 위한 userId -->
                     <input type="hidden" name="userId" th:value="${myName}"/>
-
                     <button type="submit" class="btn btn-primary">
                         정답 확인
                     </button>
                 </form>
             </section>
 
-            <!-- 정답 결과 (웹소켓으로 실시간 업데이트) -->
             <section class="border bg-white p-3 mt-3">
                 <h2 class="h6 mb-2">정답 결과</h2>
                 <div id="guess-result" class="small text-muted">
@@ -68,6 +57,7 @@
         </aside>
     </div>
 </main>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
