@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.Map;
 
 
 @Controller
@@ -34,7 +34,9 @@ public class GameController {
     //공통으로 Model에 등록시킬 값들을 메서드로 처리
     private void addCommonAttributes(Model model, GameRoom room, Player me) {
         GameState gameState = room.getGameState();
-        model.addAttribute("round", gameState.getRound());
+        int displayRound = gameState.getRound();
+
+        model.addAttribute("round", displayRound);
         model.addAttribute("triesLeft", gameState.getTries());
         model.addAttribute("totalScore", gameState.getTotalScore());
         model.addAttribute("roomId", room.getRoomId());
@@ -110,18 +112,7 @@ public class GameController {
             String answerWord = gameService.getWordForDrawer();
             gameService.setAnswer(room, answerWord);
         }
-        try {
-            GameMessage start = new GameMessage();
-            start.setType("ROUND_START");
-            start.setRoomId(roomId);
-            start.setRound(gameService.getCurrentRound(room));
-            start.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
-            start.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
 
-            gameSocketHandler.sendRoundStart(roomId, start);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return "redirect:/game/play";
     }
 
@@ -254,6 +245,7 @@ public class GameController {
         GameState gameState = room.getGameState();
         boolean roundSuccess = gameState.getRoundScore() > 0;
 
+
         model.addAttribute("round", gameState.getRound() - 1);
         model.addAttribute("roundSuccess", roundSuccess);
         model.addAttribute("roundScore", gameState.getRoundScore());
@@ -271,6 +263,41 @@ public class GameController {
         return "midResult";
     }
 
+    @PostMapping("/timeout")
+    @ResponseBody // 응답 바디 없이 상태 코드만 반환
+    public String handleTimeout(@RequestBody Map<String, String> payload, HttpSession session) {
+        String roomId = payload.get("roomId");
+        String userId = payload.get("userId");
+
+        if (roomId == null || userId == null) {
+            return "error";
+        }
+        GameRoom room = gameRoomManager.getGameRoom(roomId);
+        if (room == null) {
+            return "error";
+        }
+        Player me = room.findPlayerByName(userId);
+        if (me == null) {
+            return "error";
+        }
+
+        GameState gameState = room.getGameState();
+
+        // 정답을 맞추지 못하고 시간 초과로 라운드가 종료된 경우를 가정
+        boolean correct = false;
+
+        gameService.isRoundOver(room, correct);
+
+        try {
+            int finishedRound = gameState.getRound() - 1;
+            gameSocketHandler.sendRoundEnd(roomId, finishedRound, gameState.getAnswer(), false); // 타임아웃이므로 roundSuccess=false
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        return "ok"; // 클라이언트에게 200 OK 응답
+    }
 
 //    //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET   : 기존 GetMapping
 //    @GetMapping("/answer")
@@ -329,7 +356,10 @@ public class GameController {
         try {
             GameMessage start = new GameMessage();
             start.setType("ROUND_START");
-            start.setRound(gameService.getCurrentRound(room));
+
+            int displayRound = gameService.getCurrentRound(room) - 1;
+
+            start.setRound(displayRound);
             start.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
             start.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
             start.setRoomId(roomId);

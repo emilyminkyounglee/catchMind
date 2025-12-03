@@ -257,6 +257,77 @@ function updatePlayerList(players) {
   // 4. 라운드/점수/타이머 & 결과 UI
   // ===============================
 
+
+  // 타이머 변수
+  let timerInterval;
+  const ROUND_DURATION = 90; // 1분 30초
+
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  }
+
+  function updateTimerDisplay(seconds) {
+    const timerEl = document.getElementById("timer-display");
+    if (timerEl) {
+        timerEl.textContent = formatTime(seconds);
+    }
+  }
+
+  function startTimer() {
+    // 기존 타이머 중지
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+
+    let timeLeft = ROUND_DURATION;
+    updateTimerDisplay(timeLeft); // 초기 값 표시
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay(timeLeft);
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            // 타이머 종료 시 서버로 TIME_OUT 메시지 전송
+            sendTimeOut();
+        }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+  }
+
+  function sendTimeOut() {
+    if (!roomId || !myName) {
+        log("TIME_OUT not sent - roomId or myName missing", { roomId, myName });
+        return;
+    }
+
+    // 서버의 GameController /game/timeout POST 엔드포인트 호출
+    fetch("/game/timeout", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            roomId: roomId,
+            userId: myName // userId로 사용
+        })
+    }).then(response => {
+        if (!response.ok) {
+            console.error("TIME_OUT request failed");
+        }
+    }).catch(err => {
+        console.error("TIME_OUT fetch error", err);
+    });
+  }
+
   function renderAttempts(triesLeft) {
     const container = document.getElementById("attempt-icons");
     if (!container) return;
@@ -308,6 +379,7 @@ function updatePlayerList(players) {
   }
 
   function handleRoundEnd(msg) {
+    stopTimer();
     // midResult 페이지로 이동
     window.location.href = "/game/answer";
   }
@@ -398,6 +470,7 @@ function updatePlayerList(players) {
       case "ROUND_START":
         // 나중에 라운드 시작 UI 갱신용으로 쓸 수 있음
         log("ROUND_START:", msg);
+        startTimer();
         break;
 
       case "PLAYER_LIST":
