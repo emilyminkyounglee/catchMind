@@ -123,6 +123,10 @@ public class GameSocketHandler extends TextWebSocketHandler {
             case "DRAW":
                 handleDraw(session, gameMsg);
                 break;
+            case "CLEAR_CANVAS":
+                handleClearCanvas(session, gameMsg);
+                break;
+
             case "GAME_START":
                 handleGameStart(session, gameMsg);
                 break;
@@ -232,6 +236,27 @@ public class GameSocketHandler extends TextWebSocketHandler {
             e.printStackTrace();
         }
     }
+
+
+    //메서드 기능 : 초기화
+    private void handleClearCanvas(WebSocketSession session, GameMessage msg) throws IOException {
+        String roomId = sessionRoomMap.get(session);
+        System.out.println("[WS] CLEAR_CANVAS 받음, roomId=" + roomId );
+        if (roomId == null) {
+            System.out.println("roomId 없는 세션에서 CLEAR_CANVAS, 무시");
+            return;
+        }
+
+        // 혹시 클라이언트에서 roomId 안 채워서 보냈어도 서버에서 강제로 세팅
+        msg.setRoomId(roomId);
+        msg.setType("CLEAR_CANVAS");
+
+        String json = objectMapper.writeValueAsString(msg);
+        broadcastToRoom(roomId, json);
+    }
+
+
+
     private void handleGameStart(WebSocketSession session, GameMessage msg) throws IOException {
         String roomId = sessionRoomMap.get(session);
         if (roomId == null) {
