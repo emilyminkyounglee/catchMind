@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import kr.ac.ewha.catchMind.model.GameRoom;
+import kr.ac.ewha.catchMind.model.GameRoomManager;
 import kr.ac.ewha.catchMind.model.Player;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -24,7 +26,8 @@ public class GameSocketHandler extends TextWebSocketHandler {
     // 접속한 클라이언트 세션들을 모아두는 리스트, thread-safe 리스트로 세션관리
     private static final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
-    //private final GameService gameService;
+    private final GameService gameService;
+    private final GameRoomManager gameRoomManager;
 
     private final Map<WebSocketSession, String> sessionRoomMap = new ConcurrentHashMap<WebSocketSession, String>();
 
@@ -32,9 +35,12 @@ public class GameSocketHandler extends TextWebSocketHandler {
     // JSON 문자열 <> java 객체 GameMessage 변환
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public GameSocketHandler() {
 
+    public GameSocketHandler(GameService gameService, GameRoomManager gameRoomManager) {
+        this.gameService = gameService;
+        this.gameRoomManager = gameRoomManager;
     }
+
     private void broadcastToRoom(String roomId, String jsonMessage) {
         for (WebSocketSession session : sessions) {
             if (!session.isOpen()) {
@@ -71,6 +77,23 @@ public class GameSocketHandler extends TextWebSocketHandler {
             e.printStackTrace();
         }
     }
+
+//    다음 라운드 이동 동기화를 위해서 추가한 메서드
+    private void handleNextRound(WebSocketSession session, GameMessage msg) throws IOException {
+        String roomId = sessionRoomMap.get(session);
+        if (roomId == null) {
+            System.out.println("roomId 없는 세션에서 NEXT_ROUND, 무시");
+            return;
+        }
+
+        msg.setRoomId(roomId);
+        msg.setType("NEXT_ROUND");
+
+        String json = objectMapper.writeValueAsString(msg);
+        broadcastToRoom(roomId, json);
+    }
+
+
     // 소켓 연결 시
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -100,8 +123,15 @@ public class GameSocketHandler extends TextWebSocketHandler {
             case "DRAW":
                 handleDraw(session, gameMsg);
                 break;
+            case "CLEAR_CANVAS":
+                handleClearCanvas(session, gameMsg);
+                break;
+
             case "GAME_START":
                 handleGameStart(session, gameMsg);
+                break;
+            case "NEXT_ROUND":
+                handleNextRound(session, gameMsg);
                 break;
             default:
                 System.out.println(type + ": 제대로 된 형식이 아닙니다.");
@@ -164,6 +194,19 @@ public class GameSocketHandler extends TextWebSocketHandler {
         // 입장 알림을 같은 방 사람들에게만 브로드캐스트
         String json = objectMapper.writeValueAsString(msg);
         broadcastToRoom(roomId, json);
+
+        // rount_start 메시지 전송 > timer 시작 트리거
+        GameRoom room = gameRoomManager.getGameRoom(roomId);
+        if (room != null && room.getPlayerList().size() == room.getCapacity()) {
+            GameMessage start = new GameMessage();
+            start.setType("ROUND_START");
+            start.setRoomId(roomId);
+            start.setRound(gameService.getCurrentRound(room));
+            start.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
+            start.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
+
+            sendRoundStart(roomId, start);
+        }
     }
 
     private void handleDraw(WebSocketSession session, GameMessage msg) throws IOException {
@@ -193,6 +236,27 @@ public class GameSocketHandler extends TextWebSocketHandler {
             e.printStackTrace();
         }
     }
+
+
+    //메서드 기능 : 초기화
+    private void handleClearCanvas(WebSocketSession session, GameMessage msg) throws IOException {
+        String roomId = sessionRoomMap.get(session);
+        System.out.println("[WS] CLEAR_CANVAS 받음, roomId=" + roomId );
+        if (roomId == null) {
+            System.out.println("roomId 없는 세션에서 CLEAR_CANVAS, 무시");
+            return;
+        }
+
+        // 혹시 클라이언트에서 roomId 안 채워서 보냈어도 서버에서 강제로 세팅
+        msg.setRoomId(roomId);
+        msg.setType("CLEAR_CANVAS");
+
+        String json = objectMapper.writeValueAsString(msg);
+        broadcastToRoom(roomId, json);
+    }
+
+
+
     private void handleGameStart(WebSocketSession session, GameMessage msg) throws IOException {
         String roomId = sessionRoomMap.get(session);
         if (roomId == null) {

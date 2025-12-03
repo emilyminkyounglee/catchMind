@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.Map;
 
 
 @Controller
@@ -34,7 +34,9 @@ public class GameController {
     //공통으로 Model에 등록시킬 값들을 메서드로 처리
     private void addCommonAttributes(Model model, GameRoom room, Player me) {
         GameState gameState = room.getGameState();
-        model.addAttribute("round", gameState.getRound());
+        int displayRound = gameState.getRound();
+
+        model.addAttribute("round", displayRound);
         model.addAttribute("triesLeft", gameState.getTries());
         model.addAttribute("totalScore", gameState.getTotalScore());
         model.addAttribute("roomId", room.getRoomId());
@@ -102,26 +104,22 @@ public class GameController {
 
         if (gameState.getGameId() == null || gameService.isGameOver(room)) {
             System.out.println("[LOG] set new game");
+            // 1) 게임 상태 초기화 + 새 gameId 부여
             gameService.setupNewGame(room);
             gameService.startNewGameId(room);
 
-            gameService.assignRoles(room.getPlayerList());
+            // 2) 1라운드 시작 (round = 1)
             gameState.startNewRound();
+
+            // 3) 현재 라운드 번호(1)에 맞춰 Drawer/Guesser 역할 배정
+            gameService.assignRolesForNewGame(room);
+
+            // 4) 첫 라운드 정답 세팅
             String answerWord = gameService.getWordForDrawer();
             gameService.setAnswer(room, answerWord);
         }
-        try {
-            GameMessage start = new GameMessage();
-            start.setType("ROUND_START");
-            start.setRoomId(roomId);
-            start.setRound(gameService.getCurrentRound(room));
-            start.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
-            start.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
 
-            gameSocketHandler.sendRoundStart(roomId, start);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
         return "redirect:/game/play";
     }
 
@@ -160,6 +158,7 @@ public class GameController {
     public String showGuesser(Model model, HttpSession session) {
         return "redirect:/game/play";
     }
+
     @PostMapping("/answer")
     public String submitAnswer(@RequestParam String answer, Model model, @RequestParam String userId, HttpSession session) {
 
@@ -210,6 +209,7 @@ public class GameController {
         model.addAttribute("totalScore", gameState.getTotalScore());
         model.addAttribute("answerWord", gameState.getAnswer());
         model.addAttribute("myName", me.getName());
+        model.addAttribute("roomId", roomId);
 
         try {
             gameSocketHandler.sendRoundEnd(roomId, gameState.getRound()-1, gameState.getAnswer(), correct);
@@ -230,26 +230,38 @@ public class GameController {
         return "midResult";    // templates/midResult.html
     }
 
-    //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET
     @GetMapping("/answer")
     public String showMidResult(Model model, HttpSession session) {
 
-        String roomId = session.getAttribute("roomId").toString();
-        if (roomId == null) {
+        String roomId = (String) session.getAttribute("roomId");
+        String userId = (String) session.getAttribute("userId");
+
+        if (roomId == null || userId == null) {
             return "redirect:/";
         }
         GameRoom room = gameRoomManager.getGameRoom(roomId);
         if (room == null) {
             return "redirect:/";
         }
+
+        Player me = room.findPlayerByName(userId);
+        if (me == null) {
+            return "redirect:/";
+        }
+
         GameState gameState = room.getGameState();
         boolean roundSuccess = gameState.getRoundScore() > 0;
 
-        model.addAttribute("round", gameState.getRound() - 1); // 방금 끝난 라운드
+
+        model.addAttribute("round", gameState.getRound() - 1);
         model.addAttribute("roundSuccess", roundSuccess);
         model.addAttribute("roundScore", gameState.getRoundScore());
         model.addAttribute("totalScore", gameState.getTotalScore());
         model.addAttribute("answerWord", gameState.getAnswer());
+
+        // midResult용 공통 정보
+        model.addAttribute("myName", me.getName());
+        model.addAttribute("roomId", roomId);
 
         if (gameService.isGameOver(room)) {
             return "finalResult";
@@ -257,6 +269,70 @@ public class GameController {
 
         return "midResult";
     }
+
+    @PostMapping("/timeout")
+    @ResponseBody // 응답 바디 없이 상태 코드만 반환
+    public String handleTimeout(@RequestBody Map<String, String> payload, HttpSession session) {
+        String roomId = payload.get("roomId");
+        String userId = payload.get("userId");
+
+        if (roomId == null || userId == null) {
+            return "error";
+        }
+        GameRoom room = gameRoomManager.getGameRoom(roomId);
+        if (room == null) {
+            return "error";
+        }
+        Player me = room.findPlayerByName(userId);
+        if (me == null) {
+            return "error";
+        }
+
+        GameState gameState = room.getGameState();
+
+        // 정답을 맞추지 못하고 시간 초과로 라운드가 종료된 경우를 가정
+        boolean correct = false;
+
+        gameService.isRoundOver(room, correct);
+
+        try {
+            int finishedRound = gameState.getRound() - 1;
+            gameSocketHandler.sendRoundEnd(roomId, finishedRound, gameState.getAnswer(), false); // 타임아웃이므로 roundSuccess=false
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        return "ok"; // 클라이언트에게 200 OK 응답
+    }
+
+//    //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET   : 기존 GetMapping
+//    @GetMapping("/answer")
+//    public String showMidResult(Model model, HttpSession session) {
+//
+//        String roomId = session.getAttribute("roomId").toString();
+//        if (roomId == null) {
+//            return "redirect:/";
+//        }
+//        GameRoom room = gameRoomManager.getGameRoom(roomId);
+//        if (room == null) {
+//            return "redirect:/";
+//        }
+//        GameState gameState = room.getGameState();
+//        boolean roundSuccess = gameState.getRoundScore() > 0;
+//
+//        model.addAttribute("round", gameState.getRound() - 1); // 방금 끝난 라운드
+//        model.addAttribute("roundSuccess", roundSuccess);
+//        model.addAttribute("roundScore", gameState.getRoundScore());
+//        model.addAttribute("totalScore", gameState.getTotalScore());
+//        model.addAttribute("answerWord", gameState.getAnswer());
+//
+//        if (gameService.isGameOver(room)) {
+//            return "finalResult";
+//        }
+//
+//        return "midResult";
+//    }
 
     @PostMapping("/next-round")
     public String nextRound(HttpSession session, Model model) {
@@ -287,7 +363,10 @@ public class GameController {
         try {
             GameMessage start = new GameMessage();
             start.setType("ROUND_START");
-            start.setRound(gameService.getCurrentRound(room));
+
+            int displayRound = gameService.getCurrentRound(room) - 1;
+
+            start.setRound(displayRound);
             start.setDrawerName(gameService.getDrawerName(room.getPlayerList()));
             start.setGuesserName(gameService.getGuesserName(room.getPlayerList()));
             start.setRoomId(roomId);
