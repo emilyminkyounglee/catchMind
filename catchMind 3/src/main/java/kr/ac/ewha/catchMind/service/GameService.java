@@ -174,60 +174,80 @@ public class GameService {
                 state.getGameId()
         );
     }
+
     public void prepareNextRound(GameRoom room)
     {
         GameState gameState = room.getGameState();
+
+        // 다음 라운드 초기화가 필요한 상태가 아니거나, 이미 게임이 끝났으면 그냥 리턴
         if (!gameState.isNeedInitNextRound() || gameState.isGameOver()) {
             return;
         }
-         List<Player> players = room.getPlayerList();
+
+        List<Player> players = room.getPlayerList();
         if (players == null || players.isEmpty())
         {
             return;
         }
 
-        int currentDrawerIndex = -1;
+        // 1) 라운드 수 올리기 (1,2,3,...)
+        gameState.startNewRound();
+
+        // 2) 이번 라운드 번호 기준으로 Drawer를 순환 배정
+        int currentRound = gameState.getRound();
+        assignRolesForRound(players, currentRound);
+
+        // 3) 새 문제 세팅
+        String answerWord = getWordForDrawer();
+        gameState.assignAnswer(answerWord);
+
+        // 4) 다음 라운드 초기화 플래그 내려주기
+        gameState.clearNeedInitNextRound();
+    }
+//
+//    public void assignRoles(List<Player> players) {
+//        if (players == null || players.size() == 0) {
+//            return;
+//        }
+//        int drawerIndex = (int)(Math.random() * players.size());
+//        for(int i = 0; i < players.size(); i++) {
+//            Player player = players.get(i);
+//            if (i == drawerIndex) {
+//                player.setRole(Role.DRAWER);
+//            } else  {
+//                player.setRole(Role.GUESSER);
+//            }
+//        }
+//    }
+
+    //3명 이상일때 역할 분배를 위해 추가한 메서드
+    // round 번호(1,2,3,...)에 따라 Drawer를 순환시키는 공통 메서드
+    private void assignRolesForRound(List<Player> players, int round) {
+        if (players == null || players.isEmpty()) {
+            return;
+        }
+
+        // 0-based 인덱스로 변환
+        int drawerIndex = (round - 1) % players.size();
+
         for (int i = 0; i < players.size(); i++) {
-            if (players.get(i).getRole() == Role.DRAWER) {
-                currentDrawerIndex = i;
-                break;
-            }
-        }
-        int nextDrawerIndex;
-        if (currentDrawerIndex == -1)
-        {
-            nextDrawerIndex = 0;
-        } else  {
-            nextDrawerIndex = (currentDrawerIndex + 1)%players.size();
-        }
-        for (int i = 0; i<players.size(); i++) {
             Player player = players.get(i);
-            if (i == nextDrawerIndex) {
+            if (i == drawerIndex) {
                 player.setRole(Role.DRAWER);
             } else {
                 player.setRole(Role.GUESSER);
             }
         }
-
-        gameState.startNewRound();
-        String answerWord = getWordForDrawer();
-        gameState.assignAnswer(answerWord);
-        gameState.clearNeedInitNextRound();
+    }
+    
+    //추가 메서드) 새 게임 시작 시에 쓸 메서드 추가
+    // 새 게임 시작 시, 현재 GameState의 round 값에 맞춰 역할 배정
+    public void assignRolesForNewGame(GameRoom room) {
+        GameState gameState = room.getGameState();
+        List<Player> players = room.getPlayerList();
+        assignRolesForRound(players, gameState.getRound());
     }
 
-    public void assignRoles(List<Player> players) {
-        if (players == null || players.size() == 0) {
-            return;
-        }
-        int drawerIndex = (int)(Math.random() * players.size());
-        for(int i = 0; i < players.size(); i++) {
-            Player player = players.get(i);
-            if (i == drawerIndex) {
-                player.setRole(Role.DRAWER);
-            } else  {
-                player.setRole(Role.GUESSER);
-            }
-        }
-    }
+
 
 }

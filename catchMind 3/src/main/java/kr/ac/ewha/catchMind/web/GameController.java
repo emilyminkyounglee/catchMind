@@ -104,14 +104,21 @@ public class GameController {
 
         if (gameState.getGameId() == null || gameService.isGameOver(room)) {
             System.out.println("[LOG] set new game");
+            // 1) 게임 상태 초기화 + 새 gameId 부여
             gameService.setupNewGame(room);
             gameService.startNewGameId(room);
 
-            gameService.assignRoles(room.getPlayerList());
+            // 2) 1라운드 시작 (round = 1)
             gameState.startNewRound();
+
+            // 3) 현재 라운드 번호(1)에 맞춰 Drawer/Guesser 역할 배정
+            gameService.assignRolesForNewGame(room);
+
+            // 4) 첫 라운드 정답 세팅
             String answerWord = gameService.getWordForDrawer();
             gameService.setAnswer(room, answerWord);
         }
+
 
         return "redirect:/game/play";
     }
