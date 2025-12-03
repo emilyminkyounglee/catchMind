@@ -71,6 +71,23 @@ public class GameSocketHandler extends TextWebSocketHandler {
             e.printStackTrace();
         }
     }
+
+//    다음 라운드 이동 동기화를 위해서 추가한 메서드
+    private void handleNextRound(WebSocketSession session, GameMessage msg) throws IOException {
+        String roomId = sessionRoomMap.get(session);
+        if (roomId == null) {
+            System.out.println("roomId 없는 세션에서 NEXT_ROUND, 무시");
+            return;
+        }
+
+        msg.setRoomId(roomId);
+        msg.setType("NEXT_ROUND");
+
+        String json = objectMapper.writeValueAsString(msg);
+        broadcastToRoom(roomId, json);
+    }
+
+
     // 소켓 연결 시
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -102,6 +119,9 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 break;
             case "GAME_START":
                 handleGameStart(session, gameMsg);
+                break;
+            case "NEXT_ROUND":
+                handleNextRound(session, gameMsg);
                 break;
             default:
                 System.out.println(type + ": 제대로 된 형식이 아닙니다.");
