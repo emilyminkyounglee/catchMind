@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpSession;
 
 import kr.ac.ewha.catchMind.handler.GameSocketHandler;
 import kr.ac.ewha.catchMind.model.*;
+import kr.ac.ewha.catchMind.service.GameSaveService;
 import kr.ac.ewha.catchMind.service.GameService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,11 +23,13 @@ import java.util.Map;
 @RequestMapping("/game")
 public class GameController {
     private final GameService gameService;
+    private final GameSaveService gameSaveService;
     private final GameSocketHandler gameSocketHandler;
     private final GameRoomManager gameRoomManager;
 
-    public GameController(GameService gameService, GameSocketHandler gameSocketHandler, GameRoomManager gameRoomManager) {
+    public GameController(GameService gameService, GameSaveService gameSaveService, GameSocketHandler gameSocketHandler, GameRoomManager gameRoomManager) {
         this.gameService = gameService;
+        this.gameSaveService = gameSaveService;
         this.gameSocketHandler = gameSocketHandler;
         this.gameRoomManager = gameRoomManager;
     }
@@ -221,8 +224,8 @@ public class GameController {
         if (gameService.isGameOver(room)) {
             System.out.println("[LOG] game over! saving game history");
             for (Player p : room.getPlayerList()) {
-                gameService.saveGameHistory(p, room);
-                gameService.saveGameData(p, room);
+                gameSaveService.saveGameHistory(p, room);
+                gameSaveService.saveGameData(p, room);
             }
             return "finalResult";
         }

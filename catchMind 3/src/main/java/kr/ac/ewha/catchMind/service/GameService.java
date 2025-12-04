@@ -19,12 +19,10 @@ public class GameService {
     //Controller에서 게임 새로 시작할때 resetGame 부르고 시작
     private final PlayerRepository playerRepository;
     private final WordDictionaryRepository wordDictionaryRepository;
-    private final GameHistoryRepository gameHistoryRepository;
 
-    public GameService(PlayerRepository playerRepository, WordDictionaryRepository wordDictionaryRepository, GameHistoryRepository gameHistoryRepository) {
+    public GameService(PlayerRepository playerRepository, WordDictionaryRepository wordDictionaryRepository) {
         this.playerRepository = playerRepository;
         this.wordDictionaryRepository = wordDictionaryRepository;
-        this.gameHistoryRepository = gameHistoryRepository;
     }
 
     public boolean isGameOver(GameRoom room) // 현재 게임이 종료되었는지 확인 aka 6라운드까지 진행 완료 했는지
@@ -117,13 +115,6 @@ public class GameService {
         return null;
     }
 
-    @Transactional
-    public void saveGameData(Player p, GameRoom room) {
-        GameState gameState = room.getGameState();
-        p.setTotalScore(p.getTotalScore() + gameState.getTotalScore());
-        p.setGamesPlayed(p.getGamesPlayed() + 1);
-        playerRepository.save(p);
-    }
 
     @Transactional
     public Player loadPlayer(String name) {
@@ -135,44 +126,6 @@ public class GameService {
             playerRepository.save(p);
         }
         return p;
-    }
-
-    @Transactional
-    public void saveGameHistory(Player p,
-                                char[] roundResult,
-                                int[] roundScore,
-                                int totalScore,
-                                String gameId) {
-        GameHistory history = new GameHistory();
-        history.setPlayer(p);
-        history.setGameId(gameId);
-
-        history.setRound1Result(roundResult[0]);
-        history.setRound1Score(roundScore[0]);
-        history.setRound2Result(roundResult[1]);
-        history.setRound2Score(roundScore[1]);
-        history.setRound3Result(roundResult[2]);
-        history.setRound3Score(roundScore[2]);
-        history.setRound4Result(roundResult[3]);
-        history.setRound4Score(roundScore[3]);
-        history.setRound5Result(roundResult[4]);
-        history.setRound5Score(roundScore[4]);
-        history.setRound6Result(roundResult[5]);
-        history.setRound6Score(roundScore[5]);
-
-        history.setTotalScore(totalScore);
-        gameHistoryRepository.save(history);
-    }
-    @Transactional
-    public void saveGameHistory(Player p, GameRoom room) {
-        GameState state = room.getGameState();
-        saveGameHistory(
-                p,
-                state.getRoundResult(),
-                state.getRoundScores(),
-                state.getTotalScore(),
-                state.getGameId()
-        );
     }
 
     public void prepareNextRound(GameRoom room)

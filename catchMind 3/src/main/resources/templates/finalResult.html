@@ -19,14 +19,9 @@
             <div class="bg-white rounded shadow p-4">
                 <h1 class="mb-3">게임 결과</h1>
                 <p class="lead">총 라운드: <strong id="total-rounds">6</strong></p>
-                <p class="lead">최종 점수: <strong id="final-score">18점</strong></p>
+                <p class="lead">최종 점수: <strong id="final-score" th:text="${totalScore}">18점</strong></p>
 
                 <hr>
-
-                <h3 class="mt-3 mb-2">라운드별 결과</h3>
-                <ul id="round-list" class="list-group mb-3">
-                    <!-- JS로 라운드 정보 채워넣기 -->
-                </ul>
 
                 <div class="d-flex justify-content-between">
                     <a href="/" class="btn btn-outline-secondary">처음으로</a>
