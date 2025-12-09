@@ -41,6 +41,9 @@ public class GameState {
         return round > MAX_ROUNDS;
     }
     public boolean checkRoundOver(boolean correct) {
+        if (isNeedInitNextRound()) {
+            return true;
+        }
         boolean isOver = false;
         int idx = round -1;
         if (correct) {

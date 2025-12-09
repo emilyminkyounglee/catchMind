@@ -556,7 +556,10 @@ function updatePlayerList(players) {
       case "ROUND_START":
         // 라운드 시작 시 타이머 시작
         log("ROUND_START:", msg);
-        startTimer();
+        if(myRole == "GUESSER")
+        {
+            startTimer();
+        }
         break;
 
       case "PLAYER_LIST":
