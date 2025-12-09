@@ -33,3 +33,9 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+import org.gradle.api.file.DuplicatesStrategy
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
+tasks.withType(BootJar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

@@ -559,6 +559,7 @@ function updatePlayerList(players) {
         if(myRole == "GUESSER")
         {
             startTimer();
+
         }
         break;
 
