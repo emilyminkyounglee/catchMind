@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-
 @Controller
 @RequestMapping("/game")
 public class GameController {
@@ -34,7 +33,6 @@ public class GameController {
         this.gameRoomManager = gameRoomManager;
     }
 
-    //공통으로 Model에 등록시킬 값들을 메서드로 처리
     private void addCommonAttributes(Model model, GameRoom room, Player me) {
         GameState gameState = room.getGameState();
         int displayRound = gameState.getRound();
@@ -82,7 +80,6 @@ public class GameController {
                            @RequestParam String userId,
                            HttpSession session,
                            Model model) {
-        // POST 버전 begin() 과 똑같이 동작하게
         return begin(roomId, userId, session, model);
     }
     @PostMapping("/begin")
@@ -111,13 +108,10 @@ public class GameController {
             gameService.setupNewGame(room);
             gameService.startNewGameId(room);
 
-            // 2) 1라운드 시작 (round = 1)
             gameState.startNewRound();
 
-            // 3) 현재 라운드 번호(1)에 맞춰 Drawer/Guesser 역할 배정
             gameService.assignRolesForNewGame(room);
 
-            // 4) 첫 라운드 정답 세팅
             String answerWord = gameService.getWordForDrawer();
             gameService.setAnswer(room, answerWord);
         }
@@ -193,7 +187,6 @@ public class GameController {
         }
 
         if (!roundOver) {
-            // 라운드 안 끝났으면 다시 Guesser 화면
             addCommonAttributes(model, room, me);
             model.addAttribute("lastResult", correct);
             if (me.getRole().equals(Role.GUESSER)) {
@@ -262,7 +255,6 @@ public class GameController {
         model.addAttribute("totalScore", gameState.getTotalScore());
         model.addAttribute("answerWord", gameState.getAnswer());
 
-        // midResult용 공통 정보
         model.addAttribute("myName", me.getName());
         model.addAttribute("roomId", roomId);
 
@@ -274,7 +266,7 @@ public class GameController {
     }
 
     @PostMapping("/timeout")
-    @ResponseBody // 응답 바디 없이 상태 코드만 반환
+    @ResponseBody
     public String handleTimeout(@RequestBody Map<String, String> payload, HttpSession session) {
         String roomId = payload.get("roomId");
         String userId = payload.get("userId");
@@ -293,7 +285,6 @@ public class GameController {
 
         GameState gameState = room.getGameState();
 
-        // 정답을 맞추지 못하고 시간 초과로 라운드가 종료된 경우를 가정
         boolean correct = false;
 
         gameService.isRoundOver(room, correct);
@@ -309,34 +300,6 @@ public class GameController {
         return "ok"; // 클라이언트에게 200 OK 응답
     }
 
-//    //  라운드가 타임아웃 / 기회 소진 등으로 끝났을 때 midResult 보여주는 GET   : 기존 GetMapping
-//    @GetMapping("/answer")
-//    public String showMidResult(Model model, HttpSession session) {
-//
-//        String roomId = session.getAttribute("roomId").toString();
-//        if (roomId == null) {
-//            return "redirect:/";
-//        }
-//        GameRoom room = gameRoomManager.getGameRoom(roomId);
-//        if (room == null) {
-//            return "redirect:/";
-//        }
-//        GameState gameState = room.getGameState();
-//        boolean roundSuccess = gameState.getRoundScore() > 0;
-//
-//        model.addAttribute("round", gameState.getRound() - 1); // 방금 끝난 라운드
-//        model.addAttribute("roundSuccess", roundSuccess);
-//        model.addAttribute("roundScore", gameState.getRoundScore());
-//        model.addAttribute("totalScore", gameState.getTotalScore());
-//        model.addAttribute("answerWord", gameState.getAnswer());
-//
-//        if (gameService.isGameOver(room)) {
-//            return "finalResult";
-//        }
-//
-//        return "midResult";
-//    }
-
     @PostMapping("/next-round")
     public String nextRound(HttpSession session, Model model) {
 
@@ -350,11 +313,10 @@ public class GameController {
         if (room == null) {
             return "redirect:/";
         }
-        // 1) 게임이 이미 끝났으면 저장 후 최종 결과
+
         if (gameService.isGameOver(room)) {
             return "finalResult";
         }
-
 
         gameService.prepareNextRound(room);
         Player me = room.findPlayerByName(userId);

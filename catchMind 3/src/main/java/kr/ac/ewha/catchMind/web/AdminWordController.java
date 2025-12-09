@@ -1,6 +1,5 @@
 package kr.ac.ewha.catchMind.web;
 
-
 import kr.ac.ewha.catchMind.model.WordDictionary;
 import kr.ac.ewha.catchMind.repository.WordDictionaryRepository;
 import org.springframework.beans.factory.annotation.Autowired;

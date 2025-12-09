@@ -9,7 +9,6 @@ import kr.ac.ewha.catchMind.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 @Service
 public class GameSaveService {
     private GameHistoryRepository gameHistoryRepository;
@@ -19,7 +18,6 @@ public class GameSaveService {
         this.gameHistoryRepository = gameHistoryRepository;
         this.playerRepository = playerRepository;
     }
-
 
     @Transactional
     public void saveGameData(Player p, GameRoom room) {
@@ -55,6 +53,7 @@ public class GameSaveService {
         history.setTotalScore(totalScore);
         gameHistoryRepository.save(history);
     }
+
     @Transactional
     public void saveGameHistory(Player p, GameRoom room) {
         GameState state = room.getGameState();

@@ -1,8 +1,6 @@
 package kr.ac.ewha.catchMind.model;
 
-
 import jakarta.persistence.*;
-
 
 @Entity
 @Table(name = "words")

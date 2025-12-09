@@ -4,33 +4,27 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 
-// 값이 null인 필드는 JSON으로 보낼 때 아예 빼버리기
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GameMessage {
-
-    // 공통
-    private String type;// JOIN, DRAW, GUESS, GUESS_RESULT 등
-
+    
+    private String type;
     private String roomId;
-
     private List<String> players;
-
     public List<String> getPlayers() {
         return players;
     }
-
     public void setPlayers(List<String> players) {
         this.players = players;
     }
-
-    // 플레이어 정보
+    
+    // 플레이어
     private String nickname;
     private String role;        // DRAWER, GUESSER
     private String drawerName;
     private String guesserName;
     private String myRole;
 
-    // 그림 정보
+    // 그림
     private Double x;
     private Double y;
     private String color;       // #000000
@@ -49,10 +43,8 @@ public class GameMessage {
 
     private String text;        // 안내 메시지
 
-    // 기본 생성자
     public GameMessage() {}
 
-    // Getter Setter
     public String getType() {
         return type;
     }

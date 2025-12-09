@@ -1,13 +1,7 @@
-// ===============================
-// 0. 대기방: 플레이어 목록 갱신 함수
-//  - 대기방에서 현재 접속자 이름 목록을 갱신하고
-//  - 인원 수/정원/시작 버튼 상태도 함께 업데이트한다.
-// ===============================
-function updatePlayerList(players) {
-  const listEl = document.getElementById("waiting-player-list");
+  // 0. 대기방
   if (!listEl) return;
 
-  // (1) 목록 비우고 다시 채우기
+  // 목록 비우고 다시 채우기
   listEl.innerHTML = "";
   players.forEach(function (name) {
     const li = document.createElement("li");
@@ -16,13 +10,13 @@ function updatePlayerList(players) {
     listEl.appendChild(li);
   });
 
-  // (2) 현재 인원 숫자 바꾸기
+  // 현재 인원 숫자 바꾸기
   const countEl = document.getElementById("current-count");
   if (countEl) {
     countEl.textContent = players.length;
   }
 
-  // (3) 정원 읽어오기
+  // 정원 읽어오기
   const capacityEl = document.getElementById("room-capacity");
   const capacity = capacityEl ? parseInt(capacityEl.textContent, 10) : null;
 
@@ -30,7 +24,7 @@ function updatePlayerList(players) {
   const waitMsg = document.getElementById("msg-wait");
   const fullMsg = document.getElementById("msg-full");
 
-  // (4) 정원에 따라 버튼 / 안내 문구 처리
+  // 정원에 따라 버튼 / 안내 문구 처리
   if (capacity != null) {
     const isFull = players.length >= capacity;
 
@@ -50,23 +44,16 @@ function updatePlayerList(players) {
 (function () {
   "use strict";
 
-  // ===============================
   // 1. 기본 설정 및 공통 변수
-  //  - 메타 태그에서 방 ID, 내 닉네임, 역할을 읽어온다.
-  //  - WebSocket 연결을 생성한다.
-  // ===============================
 
-  // 내 역할 (DRAWER / GUESSER / "")
   const roleMeta = document.querySelector('meta[name="my-role"]');
   const myRole = roleMeta ? roleMeta.content : null;
 
-  // 방 / 닉네임 정보
   const roomMeta = document.querySelector('meta[name="room-id"]');
   const nameMeta = document.querySelector('meta[name="my-name"]');
   const roomId = roomMeta ? roomMeta.content : null;
   const myName = nameMeta ? nameMeta.content : null;
 
-  // WebSocket URL 생성
   const socketUrl =
     (location.protocol === "https:" ? "wss://" : "ws://") +
     location.host +
@@ -74,14 +61,12 @@ function updatePlayerList(players) {
 
   const socket = new WebSocket(socketUrl);
 
-  // 디버깅용 로그 함수
   function log() {
     const args = Array.prototype.slice.call(arguments);
     args.unshift("[WS]");
     console.log.apply(console, args);
   }
 
-  // 서버로 메시지 전송
   function send(message) {
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));
@@ -90,11 +75,9 @@ function updatePlayerList(players) {
     }
   }
 
-  // WebSocket open 이벤트 핸들러
   function onSocketOpen() {
     log("connected");
 
-    // 연결되면 JOIN 메시지 한 번 전송
     if (roomId && myName) {
       send({
         type: "JOIN",
@@ -111,12 +94,10 @@ function updatePlayerList(players) {
     }
   }
 
-  // WebSocket close 이벤트 핸들러
   function onSocketClose() {
     log("closed");
   }
 
-  // WebSocket error 이벤트 핸들러
   function onSocketError(e) {
     log("error", e);
   }
@@ -125,11 +106,7 @@ function updatePlayerList(players) {
   socket.addEventListener("close", onSocketClose);
   socket.addEventListener("error", onSocketError);
 
-  // ===============================
-  // 2. 캔버스(그림판) 관련 설정
-  //  - Drawer는 마우스로 그림을 그리고, 그 정보를 서버로 보낸다.
-  //  - Drawer/Guesser 모두 DRAW 메시지를 받아서 화면에 그림을 그린다.
-  // ===============================
+  // 2. 그림판 관련 설정
 
   const canvas = document.getElementById("drawing-canvas");
   const ctx = canvas ? canvas.getContext("2d") : null;
@@ -148,13 +125,13 @@ function updatePlayerList(players) {
     window.addEventListener("resize", resizeCanvas);
   }
 
-  // 캔버스를 모두 지우는 함수 (필요 시 사용)
+  // 캔버스를 모두 지우는 함수
   function clearCanvas() {
     if (!ctx || !canvas) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  // 한 번의 선(또는 점)을 그리는 함수
+  // 한 번의 선을 그리는 함수
   function drawLine(x1, y1, x2, y2, color, width) {
     if (!ctx) return;
 
@@ -171,7 +148,7 @@ function updatePlayerList(players) {
     ctx.stroke();
   }
 
-  // 마우스 드로잉 관련 변수
+  // 마우스 드로잉 변수
   let drawing = false;
   let lastX = 0;
   let lastY = 0;
@@ -194,7 +171,7 @@ function updatePlayerList(players) {
       y: y,
       color: "#000000",
       thickness: 4,
-      dragging: dragging // true면 이전 점과 이어지는 선
+      dragging: dragging
     });
   }
 
@@ -207,7 +184,6 @@ function updatePlayerList(players) {
     lastX = pos.x;
     lastY = pos.y;
 
-    // 새 스트로크 시작점: dragging = false
     sendDrawPoint(pos.x, pos.y, false);
   }
 
@@ -253,10 +229,8 @@ function updatePlayerList(players) {
     const dragging = !!msg.dragging;
 
     if (dragging && hasPrevPoint) {
-      // 이전 점과 현재 점을 선으로 연결
       drawLine(prevX, prevY, x, y, color, thickness);
     } else {
-      // 새로운 점(원의 형태)으로 찍기
       ctx.beginPath();
       ctx.arc(x, y, thickness / 2, 0, Math.PI * 2);
       ctx.fillStyle = color;
@@ -269,16 +243,13 @@ function updatePlayerList(players) {
     hasPrevPoint = true;
   }
 
-  // ===============================
   // 3. GUESSER: 정답 입력 처리
-  //  - 정답 입력 폼 submit을 가로채서 fetch로 서버에 전송한다.
-  // ===============================
 
   const guessForm = document.getElementById("guess-form");
   const answerInput = document.getElementById("answer-input");
 
   function onGuessFormSubmit(e) {
-    e.preventDefault(); // 페이지 이동 막기
+    e.preventDefault();
 
     if (!guessForm || !answerInput) return;
 
@@ -302,13 +273,8 @@ function updatePlayerList(players) {
     guessForm.addEventListener("submit", onGuessFormSubmit);
   }
 
-  // ===============================
   // 4. 라운드/점수/타이머 & 결과 UI
-  //  - 서버에서 온 결과 메시지에 따라 점수/라운드/기회 수 UI를 갱신한다.
-  //  - 타이머는 클라이언트에서 90초를 카운트하고, 끝나면 서버에 TIME_OUT을 알린다.
-  // ===============================
 
-  // 타이머 관련 변수
   let timerInterval;
   const ROUND_DURATION = 90; // 1분 30초
 
@@ -346,7 +312,6 @@ function updatePlayerList(players) {
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         timerInterval = null;
-        // 타이머 종료 시 서버로 TIME_OUT 전송
         sendTimeOut();
       }
     }, 1000);
@@ -360,7 +325,7 @@ function updatePlayerList(players) {
     }
   }
 
-  // TIME_OUT 서버 전송 (라운드 시간 종료 알림)
+  // TIME_OUT 서버 전송
   function sendTimeOut() {
     if (!roomId || !myName) {
       log("TIME_OUT not sent - roomId or myName missing", {
@@ -377,7 +342,7 @@ function updatePlayerList(players) {
       },
       body: JSON.stringify({
         roomId: roomId,
-        userId: myName // userId로 사용
+        userId: myName
       })
     })
       .then(function (response) {
@@ -390,7 +355,7 @@ function updatePlayerList(players) {
       });
   }
 
-  // 남은 기회(클로버 아이콘) 표시
+  // 남은 기회 표시
   function renderAttempts(triesLeft) {
     const container = document.getElementById("attempt-icons");
     if (!container) return;
@@ -407,7 +372,7 @@ function updatePlayerList(players) {
     }
   }
 
-  // 서버에서 받은 GUESS_RESULT 메시지 처리
+  // GUESS_RESULT 메시지 처리
   function handleGuessResult(msg) {
     const box = document.getElementById("guess-result");
     if (box) {
@@ -451,14 +416,14 @@ function updatePlayerList(players) {
     }
   }
 
-  // 라운드 종료 처리 (ROUND_END 메시지)
+  // 라운드 종료 처리
   function handleRoundEnd(msg) {
     stopTimer();
     // midResult 페이지로 이동
     window.location.href = "/game/answer";
   }
 
-  // 다음 라운드로 넘어가기 (ROUND_NEXT 메시지)
+  // 다음 라운드로 넘어가기
   function handleRoundNext(msg) {
     if (window.location.pathname === "/game/answer") {
       const form = document.createElement("form");
@@ -469,12 +434,9 @@ function updatePlayerList(players) {
     }
   }
 
-  // ===============================
   // 5. 게임 시작 관련 처리
-  //  - HOST(또는 방장)가 GAME_START를 보내면 모든 인원을 /game/begin 으로 이동시킨다.
-  // ===============================
 
-  // GAME_START 수신: 모든 플레이어를 동시에 /game/begin 으로 이동
+  // GAME_START 수신
   function handleGameStart(msg) {
     if (!roomId || !myName) {
       return;
@@ -493,7 +455,6 @@ function updatePlayerList(players) {
   const startBtn = document.getElementById("btn-start-game");
 
   function onStartButtonClick() {
-    // 아직 인원 안 찼으면 무시
     if (startBtn.disabled) {
       return;
     }
@@ -517,10 +478,7 @@ function updatePlayerList(players) {
     startBtn.addEventListener("click", onStartButtonClick);
   }
 
-  // ===============================
   // 6. WebSocket 메시지 수신 분기
-  //  - 서버에서 오는 type에 따라 각각 처리 함수를 호출한다.
-  // ===============================
 
   function onSocketMessage(event) {
     let msg;
@@ -574,10 +532,8 @@ function updatePlayerList(players) {
 
   socket.addEventListener("message", onSocketMessage);
 
-  // ===============================
   // 7. 디버깅용 전역 객체
-  //  - 브라우저 콘솔에서 _gameSocket.socket / _gameSocket.send 사용 가능
-  // ===============================
+
   window._gameSocket = {
     socket: socket,
     send: send

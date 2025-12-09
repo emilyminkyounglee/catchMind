@@ -1,6 +1,5 @@
 package kr.ac.ewha.catchMind.model;
 
-
 import kr.ac.ewha.catchMind.service.GameService;
 import org.springframework.stereotype.Component;
 
